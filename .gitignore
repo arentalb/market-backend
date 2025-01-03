@@ -41,10 +41,14 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.local
+.env.*
 
 # temp directory
 .temp
 .tmp
+
+# http client directory
+/endpoints
 
 # Runtime data
 pids
