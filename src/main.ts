@@ -6,12 +6,14 @@ import { ExtendedValidationPipe } from './common/pipes/extended-validation.pipe'
 import { ResponseTransformInterceptor } from './common/interceptor/response-transform.interceptor';
 import { MainExceptionFilter } from './common/filter/main-exception.filter';
 import { PrismaExceptionFilter } from './common/filter/prisma-exception.filter';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   try {
     const app = await NestFactory.create(AppModule);
+    app.use(cookieParser());
 
     const httpAdapterHost = app.get(HttpAdapterHost);
     const configService = app.get(ConfigService);
