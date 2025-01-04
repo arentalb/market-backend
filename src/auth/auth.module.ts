@@ -30,6 +30,7 @@ import { SessionSerializer } from './util/session.serializer';
     },
   ],
   controllers: [AuthController],
+  exports: [HashingService],
 })
 export class AuthModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
