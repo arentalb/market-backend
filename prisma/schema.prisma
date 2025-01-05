@@ -164,7 +164,7 @@ model UnitConversion {
   fromUnit Unit @relation("FromUnit", fields: [fromUnitId], references: [id])
   toUnit   Unit @relation("ToUnit", fields: [toUnitId], references: [id])
 
-  @@unique([fromUnitId, toUnitId])
+  @@unique([fromUnitId, toUnitId], name: "from_to_unique")
 }
 
 model Inventory {

@@ -7,6 +7,7 @@ import { validationSchema } from './config/validation';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { EmployeesModule } from './employees/employees.module';
+import { UnitsModule } from './units/units.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { EmployeesModule } from './employees/employees.module';
     AuthModule,
     UsersModule,
     EmployeesModule,
+    UnitsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
