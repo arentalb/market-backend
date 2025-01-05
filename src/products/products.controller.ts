@@ -63,4 +63,19 @@ export class ProductsController {
       data: { product },
     };
   }
+
+  @Post(':id/units')
+  async addUnitsToProduct(
+    @Param('id') productId: number,
+    @Body('unitIds') unitIds: number[],
+  ) {
+    const product = await this.productsService.addAvailableUnitsToProduct(
+      productId,
+      unitIds,
+    );
+    return {
+      message: 'Product units added successfully',
+      data: { product },
+    };
+  }
 }

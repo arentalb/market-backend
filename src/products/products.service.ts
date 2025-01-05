@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -32,12 +33,24 @@ export class ProductsService {
   }
 
   async findAll() {
-    return this.prisma.product.findMany({
+    const productData = await this.prisma.product.findMany({
       include: {
         baseUnit: true,
         category: true,
+        productUnits: {
+          include: { unit: true },
+        },
       },
     });
+
+    return productData.map(({ categoryId, baseUnitId, ...product }) => ({
+      ...product,
+      productUnits: product.productUnits.map(({ unit }) => ({
+        id: unit.id,
+        unitName: unit.unitName,
+        unitSymbol: unit.unitSymbol,
+      })),
+    }));
   }
 
   async findOne(id: number) {
@@ -51,7 +64,22 @@ export class ProductsService {
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found.`);
     }
-    return product;
+    const productFound = await this.prisma.product.findUnique({
+      where: { id: id },
+      include: {
+        productUnits: {
+          include: { unit: true },
+        },
+      },
+    });
+    const { categoryId, baseUnitId, ...productData } = productFound;
+
+    return {
+      ...productData,
+      productUnits: productData.productUnits.map((productUnit) => ({
+        ...productUnit.unit,
+      })),
+    };
   }
 
   async update(id: number, updateProductDto: UpdateProductDto) {
@@ -90,6 +118,35 @@ export class ProductsService {
 
     return this.prisma.product.delete({
       where: { id },
+    });
+  }
+  async addAvailableUnitsToProduct(productId: number, unitIds: number[]) {
+    const productExists = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+    if (!productExists) {
+      throw new BadRequestException(`Product with ID ${productId} not found.`);
+    }
+    const units = await this.prisma.unit.findMany({
+      where: { id: { in: unitIds } },
+    });
+
+    const foundUnitIds = units.map((unit) => unit.id);
+    const missingUnitIds = unitIds.filter((id) => !foundUnitIds.includes(id));
+
+    if (missingUnitIds.length > 0) {
+      throw new BadRequestException(
+        `Units with IDs ${missingUnitIds.join(', ')} not found.`,
+      );
+    }
+    const productUnitsData = unitIds.map((unitId) => ({
+      productId: productId,
+      unitId: unitId,
+    }));
+
+    await this.prisma.productUnit.createMany({
+      data: productUnitsData,
+      skipDuplicates: true,
     });
   }
   private async validateCategoryAndUnitEntities(
