@@ -7,6 +7,8 @@ import {
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateProductSalePriceDto } from './dto/create-product-sale-price.dto';
+import { CreateProductPurchasePriceDto } from './dto/create-product-purchase-price.dto';
 
 @Injectable()
 export class ProductsService {
@@ -149,6 +151,70 @@ export class ProductsService {
       skipDuplicates: true,
     });
   }
+
+  async setPurchasePrice(
+    productId: number,
+    createProductPurchasePriceDto: CreateProductPurchasePriceDto,
+  ) {
+    const { purchasePrice, unitId } = createProductPurchasePriceDto;
+
+    await this.validateProductAndUnitExistence(productId, unitId);
+
+    return this.prisma.productPurchasePrice.create({
+      data: {
+        purchasePrice: purchasePrice,
+        productId: productId,
+        unitId: unitId,
+        effectiveDate: new Date(),
+      },
+    });
+  }
+  async setSalePrice(
+    productId: number,
+    createProductSalePriceDto: CreateProductSalePriceDto,
+  ) {
+    const { unitId, sellingPrice } = createProductSalePriceDto;
+
+    await this.validateProductAndUnitExistence(productId, unitId);
+
+    return this.prisma.productSellingPrice.create({
+      data: {
+        sellingPrice: sellingPrice,
+        productId: productId,
+        unitId: unitId,
+        effectiveDate: new Date(),
+      },
+    });
+  }
+
+  private async validateProductAndUnitExistence(
+    productId: number,
+    unitId: number,
+  ) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found.`);
+    }
+
+    const productUnit = await this.prisma.productUnit.findFirst({
+      where: { productId: productId, unitId: unitId },
+    });
+    if (!productUnit) {
+      throw new NotFoundException(
+        `You can not set a price for a unit that is not available for the product.`,
+      );
+    }
+
+    const unit = await this.prisma.unit.findUnique({
+      where: { id: unitId },
+    });
+    if (!unit) {
+      throw new NotFoundException(`Unit with ID ${unitId} not found.`);
+    }
+  }
+
   private async validateCategoryAndUnitEntities(
     baseUnitId: number,
     categoryId: number,

@@ -78,4 +78,32 @@ export class ProductsController {
       data: { product },
     };
   }
+  // @Post(':id/price/purchase')
+  // async setPurchasePrice(
+  //   @Param('id') productId: number,
+  //   @Body() createProductPurchasePriceDto: CreateProductPurchasePriceDto,
+  // ) {
+  //   const product = await this.productsService.setPurchasePrice(
+  //     productId,
+  //     createProductPurchasePriceDto,
+  //   );
+  //   return {
+  //     message: 'Product purchase price added successfully',
+  //     data: { product },
+  //   };
+  // }
+  // @Post(':id/price/sale')
+  // async setSalePrice(
+  //   @Param('id') productId: number,
+  //   @Body() createProductSalePriceDto: CreateProductSalePriceDto,
+  // ) {
+  //   const product = await this.productsService.setSalePrice(
+  //     productId,
+  //     createProductSalePriceDto,
+  //   );
+  //   return {
+  //     message: 'Product selling price added successfully',
+  //     data: { product },
+  //   };
+  // }
 }
