@@ -11,6 +11,7 @@ import {
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { CreateProductSalePriceDto } from './dto/create-product-sale-price.dto';
 
 @Controller('products')
 export class ProductsController {
@@ -92,18 +93,18 @@ export class ProductsController {
   //     data: { product },
   //   };
   // }
-  // @Post(':id/price/sale')
-  // async setSalePrice(
-  //   @Param('id') productId: number,
-  //   @Body() createProductSalePriceDto: CreateProductSalePriceDto,
-  // ) {
-  //   const product = await this.productsService.setSalePrice(
-  //     productId,
-  //     createProductSalePriceDto,
-  //   );
-  //   return {
-  //     message: 'Product selling price added successfully',
-  //     data: { product },
-  //   };
-  // }
+  @Post(':id/price/sale')
+  async setSalePrice(
+    @Param('id') productId: number,
+    @Body() createProductSalePriceDto: CreateProductSalePriceDto,
+  ) {
+    const product = await this.productsService.setSalePrice(
+      productId,
+      createProductSalePriceDto,
+    );
+    return {
+      message: 'Product selling price added successfully',
+      data: { product },
+    };
+  }
 }
