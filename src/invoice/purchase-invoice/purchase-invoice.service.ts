@@ -4,11 +4,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 import { InventoryService } from 'src/inventory/inventory.service';
-import { ProductPriceService } from 'src/product-price/product-price.service';
 import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
 import { InvoiceData } from './interfaces/invoice-data';
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
 import { UnitConversionService } from '../../units/unit-conversion.service';
+import { ProductPriceService } from '../../products/product-price.service';
 
 @Injectable()
 export class PurchaseInvoiceService {
@@ -32,15 +32,15 @@ export class PurchaseInvoiceService {
       });
 
       await this.productPriceService.bulkUpsertPrices(
-        prismaTransaction,
         products,
+        prismaTransaction,
       );
 
       for (const product of products) {
         const latestPrice = await this.productPriceService.findLatestPrice(
-          prismaTransaction,
           product.productId,
           product.unitId,
+          prismaTransaction,
         );
 
         const baseUnitQuantity =
@@ -60,9 +60,9 @@ export class PurchaseInvoiceService {
         });
 
         await this.inventoryService.increaseInventory(
-          prismaTransaction,
           product.productId,
           baseUnitQuantity,
+          prismaTransaction,
         );
       }
 
@@ -171,15 +171,16 @@ export class PurchaseInvoiceService {
       });
 
       await this.productPriceService.bulkUpsertPrices(
-        prismaTransaction,
         products,
+
+        prismaTransaction,
       );
 
       for (const product of products) {
         const latestPrice = await this.productPriceService.findLatestPrice(
-          prismaTransaction,
           product.productId,
           product.unitId,
+          prismaTransaction,
         );
 
         const baseUnitQuantity =
@@ -199,9 +200,9 @@ export class PurchaseInvoiceService {
         });
 
         await this.inventoryService.increaseInventory(
-          prismaTransaction,
           product.productId,
           baseUnitQuantity,
+          prismaTransaction,
         );
       }
 

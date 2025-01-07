@@ -7,11 +7,13 @@ export class InventoryService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async increaseInventory(
-    prismaTransaction: Prisma.TransactionClient,
     productId: number,
     quantity: number,
+    prismaTransaction?: Prisma.TransactionClient,
   ) {
-    await prismaTransaction.inventory.upsert({
+    const prismaClient = prismaTransaction || this.prismaService;
+
+    await prismaClient.inventory.upsert({
       where: { productId },
       create: {
         productId,
@@ -25,11 +27,13 @@ export class InventoryService {
     });
   }
   async decreaseInventory(
-    prismaTransaction: Prisma.TransactionClient,
     productId: number,
     quantity: number,
+    prismaTransaction?: Prisma.TransactionClient,
   ) {
-    await prismaTransaction.inventory.update({
+    const prismaClient = prismaTransaction || this.prismaService;
+
+    await prismaClient.inventory.update({
       where: { productId },
       data: {
         quantity: {

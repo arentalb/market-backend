@@ -1,18 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, ProductPurchasePrice } from '@prisma/client';
 import { ProductDto } from '../invoice/purchase-invoice/dto/create-purchase-invoice.dto';
-import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ProductPriceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async bulkUpsertPrices(
-    prismaTransaction: Prisma.TransactionClient,
     products: ProductDto[],
+    prismaTransaction?: Prisma.TransactionClient,
   ): Promise<void> {
+    const prismaClient = prismaTransaction || this.prismaService;
+
     for (const product of products) {
-      await prismaTransaction.productPurchasePrice.updateMany({
+      await prismaClient.productPurchasePrice.updateMany({
         where: {
           productId: product.productId,
           unitId: product.unitId,
@@ -24,7 +26,7 @@ export class ProductPriceService {
       });
     }
 
-    await prismaTransaction.productPurchasePrice.createMany({
+    await prismaClient.productPurchasePrice.createMany({
       data: products.map((p) => ({
         productId: p.productId,
         unitId: p.unitId,
@@ -35,11 +37,13 @@ export class ProductPriceService {
   }
 
   async findLatestPrice(
-    prismaTransaction: Prisma.TransactionClient,
     productId: number,
     unitId: number,
+    prismaTransaction?: Prisma.TransactionClient,
   ): Promise<ProductPurchasePrice> {
-    const price = await prismaTransaction.productPurchasePrice.findFirst({
+    const prismaClient = prismaTransaction || this.prismaService;
+
+    const price = await prismaClient.productPurchasePrice.findFirst({
       where: {
         productId,
         unitId,
