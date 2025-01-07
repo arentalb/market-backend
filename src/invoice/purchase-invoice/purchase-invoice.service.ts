@@ -335,7 +335,7 @@ export class PurchaseInvoiceService {
     baseUnitQuantity: number,
   ) {
     await prisma.inventory.upsert({
-      where: { id: productId },
+      where: { productId: productId },
       update: { quantity: { increment: baseUnitQuantity } },
       create: { productId, quantity: baseUnitQuantity },
     });

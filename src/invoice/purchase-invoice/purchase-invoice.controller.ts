@@ -57,15 +57,30 @@ export class PurchaseInvoiceController {
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updatePurchaseInvoiceDto: UpdatePurchaseInvoiceDto,
   ) {
-    return this.purchaseInvoiceService.update(+id, updatePurchaseInvoiceDto);
+    const invoice = await this.purchaseInvoiceService.update(
+      id,
+      updatePurchaseInvoiceDto,
+    );
+    return {
+      message: 'Invoice updated ',
+      data: {
+        invoice,
+      },
+    };
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.purchaseInvoiceService.remove(+id);
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    const invoice = await this.purchaseInvoiceService.remove(id);
+    return {
+      message: 'Invoice deleted ',
+      data: {
+        invoice,
+      },
+    };
   }
 }
