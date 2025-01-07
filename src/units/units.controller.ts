@@ -11,59 +11,10 @@ import {
 } from '@nestjs/common';
 import { UnitsService } from './units.service';
 import { CreateUnitDto } from './dto/create-unit.dto';
-import { CreateConversionsDto } from './dto/create-conversions.dto';
-import { UnitConversionService } from './unit-conversions.service';
 
 @Controller('units')
 export class UnitsController {
-  constructor(
-    private readonly unitsService: UnitsService,
-    private readonly unitConversionService: UnitConversionService,
-  ) {}
-
-  @Post('conversions')
-  @HttpCode(HttpStatus.CREATED)
-  async createConversion(@Body() createConversionsDto: CreateConversionsDto) {
-    const conversion =
-      await this.unitConversionService.create(createConversionsDto);
-    return {
-      message: 'Unit conversion created successfully',
-      data: { conversion },
-    };
-  }
-
-  @Get('conversions')
-  async getConversions() {
-    const conversions = await this.unitConversionService.findAll();
-    return {
-      message: 'All unit conversions retrieved successfully',
-      data: { conversions },
-    };
-  }
-
-  @Get('conversions/:id')
-  async getConversionById(@Param('id', ParseIntPipe) id: number) {
-    const conversion = await this.unitConversionService.findOneById(id);
-    return {
-      message: 'Unit conversion details retrieved successfully',
-      data: { conversion },
-    };
-  }
-
-  @Get('conversions/from/:fromUnitId/to/:toUnitId')
-  async getConversion(
-    @Param('fromUnitId', ParseIntPipe) fromUnitId: number,
-    @Param('toUnitId', ParseIntPipe) toUnitId: number,
-  ) {
-    const conversion = await this.unitConversionService.findOneByUnits(
-      fromUnitId,
-      toUnitId,
-    );
-    return {
-      message: 'Specific unit conversion retrieved successfully',
-      data: { conversion },
-    };
-  }
+  constructor(private readonly unitsService: UnitsService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

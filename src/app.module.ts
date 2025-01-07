@@ -11,6 +11,8 @@ import { UnitsModule } from './units/units.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { PurchaseInvoiceModule } from './invoice/purchase-invoice/purchase-invoice.module';
+import { ProductPriceModule } from './product-price/product-price.module';
+import { InventoryModule } from './inventory/inventory.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { PurchaseInvoiceModule } from './invoice/purchase-invoice/purchase-invoi
     CategoriesModule,
     ProductsModule,
     PurchaseInvoiceModule,
+    ProductPriceModule,
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

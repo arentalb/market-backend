@@ -37,6 +37,7 @@
     "connect-redis": "^5.2.0",
     "cookie-parser": "^1.4.7",
     "cross-env": "^7.0.3",
+    "decimal.js": "^10.4.3",
     "dotenv-cli": "^8.0.0",
     "express-session": "^1.18.1",
     "ioredis": "^5.4.2",

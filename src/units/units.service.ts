@@ -5,18 +5,18 @@ import {
 } from '@nestjs/common';
 import { CreateUnitDto } from './dto/create-unit.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { UnitConversionService } from './unit-conversions.service';
+import { UnitConversionService } from './unit-conversion.service';
 
 @Injectable()
 export class UnitsService {
   constructor(
-    private prisma: PrismaService,
+    private prismaService: PrismaService,
     private unitConversionService: UnitConversionService,
   ) {}
 
   async create(createUnitDto: CreateUnitDto) {
     const { unitSymbol, unitName } = createUnitDto;
-    return this.prisma.unit.create({
+    return this.prismaService.unit.create({
       data: {
         unitSymbol,
         unitName,
@@ -25,11 +25,11 @@ export class UnitsService {
   }
 
   async findAll() {
-    return this.prisma.unit.findMany();
+    return this.prismaService.unit.findMany();
   }
 
   async findOne(id: number) {
-    const unit = await this.prisma.unit.findUnique({
+    const unit = await this.prismaService.unit.findUnique({
       where: { id },
     });
     if (!unit) {
@@ -39,7 +39,7 @@ export class UnitsService {
   }
 
   async remove(id: number) {
-    const unit = await this.prisma.unit.findUnique({
+    const unit = await this.prismaService.unit.findUnique({
       where: { id },
     });
 
@@ -56,7 +56,7 @@ export class UnitsService {
       );
     }
 
-    await this.prisma.unit.delete({
+    await this.prismaService.unit.delete({
       where: { id },
     });
     return null;
