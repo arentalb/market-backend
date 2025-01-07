@@ -1,5 +1,3 @@
-// purchase-invoice/purchase-invoice.service.ts
-
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -7,8 +5,8 @@ import { InventoryService } from 'src/inventory/inventory.service';
 import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
 import { InvoiceData } from './interfaces/invoice-data';
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
-import { UnitConversionService } from '../../units/unit-conversion.service';
-import { ProductPriceService } from '../../products/product-price.service';
+import { ProductPriceService } from '../products/product-price.service';
+import { UnitConversionService } from '../units/unit-conversion.service';
 
 @Injectable()
 export class PurchaseInvoiceService {

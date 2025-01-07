@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, ProductPurchasePrice } from '@prisma/client';
-import { ProductDto } from '../invoice/purchase-invoice/dto/create-purchase-invoice.dto';
+import { ProductDto } from '../invoice/dto/create-purchase-invoice.dto';
 
 @Injectable()
 export class ProductPriceService {
   constructor(private readonly prismaService: PrismaService) {}
 
+  //TODO: get rid or centralise the ProductDto interface that we import it from the invoice module
   async bulkUpsertPrices(
     products: ProductDto[],
     prismaTransaction?: Prisma.TransactionClient,

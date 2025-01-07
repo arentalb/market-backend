@@ -11,7 +11,7 @@ import {
 import { PurchaseInvoiceService } from './purchase-invoice.service';
 import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
-import { ActiveUser } from '../../auth/decorators/active-user.decorator';
+import { ActiveUser } from '../auth/decorators/active-user.decorator';
 
 @Controller('purchase-invoice')
 export class PurchaseInvoiceController {

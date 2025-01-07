@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { PurchaseInvoiceService } from './purchase-invoice.service';
+import { InventoryModule } from '../inventory/inventory.module';
+import { ProductsModule } from '../products/products.module';
+import { UnitsModule } from '../units/units.module';
 import { PurchaseInvoiceController } from './purchase-invoice.controller';
-import { InventoryModule } from '../../inventory/inventory.module';
-import { UnitsModule } from '../../units/units.module';
-import { ProductsModule } from '../../products/products.module';
+import { PurchaseInvoiceService } from './purchase-invoice.service';
 
 @Module({
   controllers: [PurchaseInvoiceController],
@@ -11,4 +11,4 @@ import { ProductsModule } from '../../products/products.module';
   imports: [InventoryModule, ProductsModule, UnitsModule],
   exports: [PurchaseInvoiceService],
 })
-export class PurchaseInvoiceModule {}
+export class InvoiceModule {}
