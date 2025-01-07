@@ -1,50 +1,37 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, ProductPurchasePrice } from '@prisma/client';
-import { ProductDto } from '../invoice/dto/create-purchase-invoice.dto';
 
 @Injectable()
 export class ProductPriceService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  //TODO: get rid or centralise the ProductDto interface that we import it from the invoice module
-  async bulkUpsertPrices(
-    products: ProductDto[],
+  async createPurchasePrice(
+    productId: number,
+    unitId: number,
+    purchasePrice: number,
     prismaTransaction?: Prisma.TransactionClient,
-  ): Promise<void> {
+  ) {
     const prismaClient = prismaTransaction || this.prismaService;
 
-    for (const product of products) {
-      await prismaClient.productPurchasePrice.updateMany({
-        where: {
-          productId: product.productId,
-          unitId: product.unitId,
-        },
-        data: {
-          purchasePrice: product.price,
-          effectiveDate: new Date(),
-        },
-      });
-    }
-
-    await prismaClient.productPurchasePrice.createMany({
-      data: products.map((p) => ({
-        productId: p.productId,
-        unitId: p.unitId,
-        purchasePrice: p.price,
+    return prismaClient.productPurchasePrice.create({
+      data: {
+        productId,
+        unitId,
+        purchasePrice,
         effectiveDate: new Date(),
-      })),
+      },
     });
   }
 
-  async findLatestPrice(
+  async findLatestPurchasePrice(
     productId: number,
     unitId: number,
     prismaTransaction?: Prisma.TransactionClient,
   ): Promise<ProductPurchasePrice> {
     const prismaClient = prismaTransaction || this.prismaService;
 
-    const price = await prismaClient.productPurchasePrice.findFirst({
+    const purchasePrice = await prismaClient.productPurchasePrice.findFirst({
       where: {
         productId,
         unitId,
@@ -54,12 +41,12 @@ export class ProductPriceService {
       },
     });
 
-    if (!price) {
+    if (!purchasePrice) {
       throw new NotFoundException(
         `No purchase price found for productId: ${productId}, unitId: ${unitId}`,
       );
     }
 
-    return price;
+    return purchasePrice;
   }
 }

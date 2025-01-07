@@ -29,17 +29,22 @@ export class PurchaseInvoiceService {
         },
       });
 
-      await this.productPriceService.bulkUpsertPrices(
-        products,
-        prismaTransaction,
-      );
-
       for (const product of products) {
-        const latestPrice = await this.productPriceService.findLatestPrice(
-          product.productId,
-          product.unitId,
-          prismaTransaction,
-        );
+        const purchasePrice =
+          await this.productPriceService.createPurchasePrice(
+            product.productId,
+            product.unitId,
+            product.price,
+            prismaTransaction,
+          );
+
+        await prismaTransaction.purchaseInvoiceItem.create({
+          data: {
+            purchaseInvoiceId: invoice.id,
+            productPurchasePriceId: purchasePrice.id,
+            quantity: product.quantity,
+          },
+        });
 
         const baseUnitQuantity =
           await this.unitConversionService.calculateQuantityInBaseUnitByProductId(
@@ -48,14 +53,6 @@ export class PurchaseInvoiceService {
             product.quantity,
             prismaTransaction,
           );
-
-        await prismaTransaction.purchaseInvoiceItem.create({
-          data: {
-            purchaseInvoiceId: invoice.id,
-            productPurchasePriceId: latestPrice.id,
-            quantity: product.quantity,
-          },
-        });
 
         await this.inventoryService.increaseInventory(
           product.productId,
@@ -168,18 +165,22 @@ export class PurchaseInvoiceService {
         where: { purchaseInvoiceId: id },
       });
 
-      await this.productPriceService.bulkUpsertPrices(
-        products,
-
-        prismaTransaction,
-      );
-
       for (const product of products) {
-        const latestPrice = await this.productPriceService.findLatestPrice(
-          product.productId,
-          product.unitId,
-          prismaTransaction,
-        );
+        const purchasePrice =
+          await this.productPriceService.createPurchasePrice(
+            product.productId,
+            product.unitId,
+            product.price,
+            prismaTransaction,
+          );
+
+        await prismaTransaction.purchaseInvoiceItem.create({
+          data: {
+            purchaseInvoiceId: invoice.id,
+            productPurchasePriceId: purchasePrice.id,
+            quantity: product.quantity,
+          },
+        });
 
         const baseUnitQuantity =
           await this.unitConversionService.calculateQuantityInBaseUnitByProductId(
@@ -188,14 +189,6 @@ export class PurchaseInvoiceService {
             product.quantity,
             prismaTransaction,
           );
-
-        await prismaTransaction.purchaseInvoiceItem.create({
-          data: {
-            purchaseInvoiceId: invoice.id,
-            productPurchasePriceId: latestPrice.id,
-            quantity: product.quantity,
-          },
-        });
 
         await this.inventoryService.increaseInventory(
           product.productId,
@@ -207,7 +200,6 @@ export class PurchaseInvoiceService {
       return invoice;
     });
   }
-
   async remove(id: number) {
     return this.prismaService.$transaction(async (prismaClient) => {
       const existing = await prismaClient.purchaseInvoice.findUnique({
