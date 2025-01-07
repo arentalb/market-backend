@@ -71,6 +71,7 @@ export class PurchaseInvoiceService {
       }),
     );
   }
+
   async findOne(id: number): Promise<InvoiceData> {
     const invoice = await this.prisma.purchaseInvoice.findUnique({
       where: {
@@ -120,12 +121,94 @@ export class PurchaseInvoiceService {
     };
   }
 
-  update(id: number, updatePurchaseInvoiceDto: UpdatePurchaseInvoiceDto) {
-    return `This action updates a #${id} purchaseInvoice`;
+  async update(id: number, updatePurchaseInvoiceDto: UpdatePurchaseInvoiceDto) {
+    const { products, supplierId } = updatePurchaseInvoiceDto;
+
+    return this.prisma.$transaction(async (prisma) => {
+      const invoice = await this.updateInvoice(prisma, id, supplierId);
+      await this.updateProductPurchasePrices(prisma, products);
+      await this.updateProductInventory(prisma, products, id);
+      return invoice;
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} purchaseInvoice`;
+  async remove(id: number) {
+    return this.prisma.$transaction(async (prisma) => {
+      await prisma.purchaseInvoiceItem.deleteMany({
+        where: { purchaseInvoiceId: id },
+      });
+
+      await prisma.purchaseInvoice.delete({
+        where: { id },
+      });
+
+      return { message: `Invoice with id ${id} removed successfully` };
+    });
+  }
+
+  private async updateProductInventory(
+    prisma: Prisma.TransactionClient,
+    products: ProductDto[],
+    invoiceId: number,
+  ) {
+    await prisma.purchaseInvoiceItem.deleteMany({
+      where: { purchaseInvoiceId: invoiceId },
+    });
+
+    for (const product of products) {
+      const productPurchasePrice = await this.findLatestProductPurchasePrice(
+        prisma,
+        product,
+      );
+      const productDetails = await this.findProductDetails(
+        prisma,
+        product.productId,
+      );
+      const baseUnitQuantity = await this.calculateBaseUnitQuantity(
+        prisma,
+        product,
+        productDetails,
+      );
+
+      await prisma.purchaseInvoiceItem.create({
+        data: {
+          purchaseInvoiceId: invoiceId,
+          productPurchasePriceId: productPurchasePrice.id,
+          quantity: product.quantity,
+        },
+      });
+
+      await this.updateInventory(prisma, product.productId, baseUnitQuantity);
+    }
+  }
+
+  private async updateProductPurchasePrices(
+    prisma: Prisma.TransactionClient,
+    products: ProductDto[],
+  ) {
+    for (const product of products) {
+      await prisma.productPurchasePrice.updateMany({
+        where: { productId: product.productId, unitId: product.unitId },
+        data: {
+          purchasePrice: product.price,
+          effectiveDate: new Date(),
+        },
+      });
+    }
+  }
+
+  private async updateInvoice(
+    prisma: Prisma.TransactionClient,
+    id: number,
+    supplierId: number,
+  ) {
+    return prisma.purchaseInvoice.update({
+      where: { id },
+      data: {
+        supplierId,
+        date: new Date(),
+      },
+    });
   }
 
   private async createInvoice(
@@ -258,23 +341,3 @@ export class PurchaseInvoiceService {
     });
   }
 }
-// private async convertToBaseUnit(
-//   productId: number,
-//   quantity: number,
-//   unitId: number,
-// ): Promise<number> {
-//   const unitConversion = await this.prisma.unitConversion.findFirst({
-//     where: {
-//       productId: productId,
-//       unitId: unitId,
-//     },
-//   });
-//
-//   if (!unitConversion) {
-//     throw new NotFoundException(
-//       `Conversion for product ${productId} and unit ${unitId} not found`,
-//     );
-//   }
-//
-//   return quantity * unitConversion.conversionFactor;
-// }

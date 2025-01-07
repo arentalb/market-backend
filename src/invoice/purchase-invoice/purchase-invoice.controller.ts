@@ -58,14 +58,14 @@ export class PurchaseInvoiceController {
 
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() updatePurchaseInvoiceDto: UpdatePurchaseInvoiceDto,
   ) {
     return this.purchaseInvoiceService.update(+id, updatePurchaseInvoiceDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseIntPipe) id: number) {
     return this.purchaseInvoiceService.remove(+id);
   }
 }
