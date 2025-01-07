@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
 } from '@nestjs/common';
@@ -34,13 +35,25 @@ export class PurchaseInvoiceController {
   }
 
   @Get()
-  findAll() {
-    return this.purchaseInvoiceService.findAll();
+  async findAll() {
+    const invoices = await this.purchaseInvoiceService.findAll();
+    return {
+      message: 'Invoice detail of all invoices',
+      data: {
+        invoices,
+      },
+    };
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.purchaseInvoiceService.findOne(+id);
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    const invoice = await this.purchaseInvoiceService.findOne(id);
+    return {
+      message: 'Invoice detail with id of ' + id,
+      data: {
+        invoice,
+      },
+    };
   }
 
   @Patch(':id')

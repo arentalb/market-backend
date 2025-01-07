@@ -6,6 +6,7 @@ import {
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import { InvoiceData } from './interfaces/invoice-data';
 
 @Injectable()
 export class PurchaseInvoiceService {
@@ -24,12 +25,99 @@ export class PurchaseInvoiceService {
     });
   }
 
-  findAll() {
-    return `This action returns all purchaseInvoice`;
-  }
+  async findAll(): Promise<InvoiceData[]> {
+    const invoices = await this.prisma.purchaseInvoice.findMany({
+      include: {
+        supplier: {
+          select: {
+            name: true,
+          },
+        },
+        worker: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
 
-  findOne(id: number) {
-    return `This action returns a #${id} purchaseInvoice`;
+    return await Promise.all(
+      invoices.map(async (invoice) => {
+        const invoiceItems = await this.prisma.purchaseInvoiceItem.findMany({
+          where: {
+            purchaseInvoiceId: invoice.id,
+          },
+          include: {
+            productPurchasePrice: {
+              include: {
+                product: true,
+                unit: true,
+              },
+            },
+          },
+        });
+
+        return {
+          invoiceId: invoice.id,
+          supplierName: invoice.supplier.name,
+          workerName: invoice.worker.name,
+          products: invoiceItems.map((item) => ({
+            productName: item.productPurchasePrice.product.name,
+            quantity: item.quantity.toNumber(),
+            price: item.productPurchasePrice.purchasePrice.toNumber(),
+            unitSymbol: item.productPurchasePrice.unit.unitSymbol,
+          })),
+        };
+      }),
+    );
+  }
+  async findOne(id: number): Promise<InvoiceData> {
+    const invoice = await this.prisma.purchaseInvoice.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        supplier: {
+          select: {
+            name: true,
+          },
+        },
+        worker: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException(`Invoice with id ${id} not found`);
+    }
+    const invoiceItems = await this.prisma.purchaseInvoiceItem.findMany({
+      where: {
+        purchaseInvoiceId: invoice.id,
+      },
+      include: {
+        productPurchasePrice: {
+          include: {
+            product: true,
+            unit: true,
+          },
+        },
+      },
+    });
+
+    return {
+      supplierName: invoice.supplier.name,
+      workerName: invoice.worker.name,
+      invoiceId: invoice.id,
+      products: invoiceItems.map((item) => ({
+        productName: item.productPurchasePrice.product.name,
+        quantity: item.quantity.toNumber(),
+        price: item.productPurchasePrice.purchasePrice.toNumber(),
+        unitSymbol: item.productPurchasePrice.unit.unitSymbol,
+      })),
+    };
   }
 
   update(id: number, updatePurchaseInvoiceDto: UpdatePurchaseInvoiceDto) {
