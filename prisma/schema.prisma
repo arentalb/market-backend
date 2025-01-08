@@ -135,7 +135,6 @@ model Product {
   productPurchasePrices ProductPurchasePrice[]
   inventory             Inventory[]
   salesInvoiceItems     SalesInvoiceItem[]
-  purchaseInvoiceItems  PurchaseInvoiceItem[]
   missingProducts       MissingProduct[]
   customerReturns       CustomerReturn[]
   purchaseReturns       PurchaseReturn[]
@@ -181,10 +180,10 @@ model SalesInvoice {
   date        DateTime @default(now())
   totalAmount Decimal  @db.Decimal(18, 2)
 
-  worker   User                  @relation(fields: [workerId], references: [id])
-  items    SalesInvoiceItem[]
-  payments SalesInvoicePayment[]
-  debts    SalesDebt[]
+  worker            User                  @relation(fields: [workerId], references: [id])
+  salesInvoiceItems SalesInvoiceItem[]
+  payments          SalesInvoicePayment[]
+  debts             SalesDebt[]
 
   @@index([workerId])
   @@index([date])
@@ -246,12 +245,12 @@ model PurchaseInvoice {
   supplierId Int
   date       DateTime @default(now())
 
-  worker          User                     @relation(fields: [workerId], references: [id])
-  supplier        Supplier                 @relation(fields: [supplierId], references: [id])
-  items           PurchaseInvoiceItem[]
-  payments        PurchaseInvoicePayment[]
-  debts           PurchaseDebt[]
-  purchaseReturns PurchaseReturn[]
+  worker               User                     @relation(fields: [workerId], references: [id])
+  supplier             Supplier                 @relation(fields: [supplierId], references: [id])
+  purchaseInvoiceItems PurchaseInvoiceItem[]
+  payments             PurchaseInvoicePayment[]
+  debts                PurchaseDebt[]
+  purchaseReturns      PurchaseReturn[]
 
   @@index([workerId])
   @@index([supplierId])
@@ -266,8 +265,6 @@ model PurchaseInvoiceItem {
 
   productPurchasePrice ProductPurchasePrice @relation(fields: [productPurchasePriceId], references: [id])
   purchaseInvoice      PurchaseInvoice      @relation(fields: [purchaseInvoiceId], references: [id])
-  Product              Product?             @relation(fields: [productId], references: [id])
-  productId            Int?
 
   @@index([purchaseInvoiceId])
   @@index([productPurchasePriceId])

@@ -74,7 +74,7 @@ export class PurchaseInvoiceService {
         worker: {
           select: { name: true },
         },
-        items: {
+        purchaseInvoiceItems: {
           include: {
             productPurchasePrice: {
               include: {
@@ -88,7 +88,7 @@ export class PurchaseInvoiceService {
     });
 
     return invoices.map((invoice) => {
-      const products = invoice.items.map((item) => ({
+      const products = invoice.purchaseInvoiceItems.map((item) => ({
         productName: item.productPurchasePrice.product.name,
         quantity: item.quantity.toNumber(),
         price: item.productPurchasePrice.purchasePrice.toNumber(),
@@ -110,7 +110,7 @@ export class PurchaseInvoiceService {
       include: {
         supplier: { select: { name: true } },
         worker: { select: { name: true } },
-        items: {
+        purchaseInvoiceItems: {
           include: {
             productPurchasePrice: {
               include: {
@@ -127,7 +127,7 @@ export class PurchaseInvoiceService {
       throw new NotFoundException(`Invoice with id ${id} not found`);
     }
 
-    const products = invoice.items.map((item) => ({
+    const products = invoice.purchaseInvoiceItems.map((item) => ({
       productName: item.productPurchasePrice.product.name,
       quantity: item.quantity.toNumber(),
       price: item.productPurchasePrice.purchasePrice.toNumber(),
@@ -142,28 +142,56 @@ export class PurchaseInvoiceService {
     };
   }
 
-  async update(id: number, updateDto: UpdatePurchaseInvoiceDto) {
+  async update(invoiceId: number, updateDto: UpdatePurchaseInvoiceDto) {
     const { supplierId, products } = updateDto;
 
     return this.prismaService.$transaction(async (prismaTransaction) => {
-      const existing = await prismaTransaction.purchaseInvoice.findUnique({
-        where: { id },
+      const invoice = await prismaTransaction.purchaseInvoice.findUnique({
+        where: { id: invoiceId },
+        include: {
+          purchaseInvoiceItems: {
+            include: {
+              productPurchasePrice: true,
+            },
+          },
+        },
       });
-      if (!existing) {
-        throw new NotFoundException(`Invoice with id ${id} not found`);
+
+      if (!invoice) {
+        throw new NotFoundException(`Invoice with id ${invoiceId} not found`);
       }
 
-      const invoice = await prismaTransaction.purchaseInvoice.update({
-        where: { id },
+      await prismaTransaction.purchaseInvoice.update({
+        where: { id: invoiceId },
         data: {
           supplierId,
           date: new Date(),
         },
       });
 
-      await prismaTransaction.purchaseInvoiceItem.deleteMany({
-        where: { purchaseInvoiceId: id },
-      });
+      for (const item of invoice.purchaseInvoiceItems) {
+        const baseUnitQuantity =
+          await this.unitConversionService.calculateQuantityInBaseUnitByProductId(
+            item.productPurchasePrice.productId,
+            item.productPurchasePrice.unitId,
+            item.quantity.toNumber(),
+            prismaTransaction,
+          );
+
+        await this.inventoryService.decreaseInventory(
+          item.productPurchasePrice.productId,
+          baseUnitQuantity,
+          prismaTransaction,
+        );
+
+        await prismaTransaction.purchaseInvoiceItem.delete({
+          where: { id: item.id },
+        });
+
+        await prismaTransaction.productPurchasePrice.delete({
+          where: { id: item.productPurchasePriceId },
+        });
+      }
 
       for (const product of products) {
         const purchasePrice =
@@ -196,10 +224,10 @@ export class PurchaseInvoiceService {
           prismaTransaction,
         );
       }
-
-      return invoice;
+      return invoiceId;
     });
   }
+
   async remove(id: number) {
     return this.prismaService.$transaction(async (prismaClient) => {
       const existing = await prismaClient.purchaseInvoice.findUnique({
@@ -217,7 +245,7 @@ export class PurchaseInvoiceService {
         where: { id },
       });
 
-      return { message: `Invoice with id ${id} removed successfully` };
+      return id;
     });
   }
 }
