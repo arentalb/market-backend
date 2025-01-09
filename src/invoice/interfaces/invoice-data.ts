@@ -11,3 +11,9 @@ export interface InvoiceData {
   workerName: string;
   products: InvoiceProduct[];
 }
+
+export interface SaleInvoiceData {
+  invoiceId: number;
+  workerName: string;
+  products: InvoiceProduct[];
+}

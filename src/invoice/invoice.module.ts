@@ -4,11 +4,13 @@ import { ProductsModule } from '../products/products.module';
 import { UnitsModule } from '../units/units.module';
 import { PurchaseInvoiceController } from './purchase-invoice.controller';
 import { PurchaseInvoiceService } from './purchase-invoice.service';
+import { SaleInvoiceController } from './sale-invoice.controller';
+import { SaleInvoiceService } from './sale-invoice.service';
 
 @Module({
-  controllers: [PurchaseInvoiceController],
-  providers: [PurchaseInvoiceService],
+  controllers: [PurchaseInvoiceController, SaleInvoiceController],
+  providers: [PurchaseInvoiceService, SaleInvoiceService],
   imports: [InventoryModule, ProductsModule, UnitsModule],
-  exports: [PurchaseInvoiceService],
+  exports: [PurchaseInvoiceService, SaleInvoiceService],
 })
 export class InvoiceModule {}

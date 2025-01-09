@@ -24,6 +24,40 @@ export class ProductPriceService {
     });
   }
 
+  async getProductFromSellingPrice(
+    productId: number,
+    unitId: number,
+    prismaTransaction?: Prisma.TransactionClient,
+  ) {
+    const prismaClient = prismaTransaction || this.prismaService;
+
+    return prismaClient.productSellingPrice.findFirst({
+      where: {
+        productId,
+        unitId,
+      },
+      orderBy: {
+        effectiveDate: 'desc',
+      },
+    });
+  }
+  async createSalePrice(
+    productId: number,
+    unitId: number,
+    sellingPrice: number,
+    prismaTransaction?: Prisma.TransactionClient,
+  ) {
+    const prismaClient = prismaTransaction || this.prismaService;
+
+    return prismaClient.productSellingPrice.create({
+      data: {
+        productId,
+        unitId,
+        sellingPrice,
+        effectiveDate: new Date(),
+      },
+    });
+  }
   async findLatestPurchasePrice(
     productId: number,
     unitId: number,
