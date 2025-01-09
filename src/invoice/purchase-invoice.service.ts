@@ -29,6 +29,7 @@ export class PurchaseInvoiceService {
         },
       });
 
+      let totalAmount = 0;
       for (const product of products) {
         const purchasePrice =
           await this.productPriceService.createPurchasePrice(
@@ -59,8 +60,15 @@ export class PurchaseInvoiceService {
           baseUnitQuantity,
           prismaTransaction,
         );
+
+        totalAmount +=
+          purchasePrice.purchasePrice.toNumber() * product.quantity;
       }
 
+      await prismaTransaction.purchaseInvoice.update({
+        where: { id: invoice.id },
+        data: { totalAmount },
+      });
       return invoice;
     });
   }
@@ -193,6 +201,7 @@ export class PurchaseInvoiceService {
         });
       }
 
+      let totalAmount = 0;
       for (const product of products) {
         const purchasePrice =
           await this.productPriceService.createPurchasePrice(
@@ -223,7 +232,13 @@ export class PurchaseInvoiceService {
           baseUnitQuantity,
           prismaTransaction,
         );
+        totalAmount +=
+          purchasePrice.purchasePrice.toNumber() * product.quantity;
       }
+      await prismaTransaction.purchaseInvoice.update({
+        where: { id: invoice.id },
+        data: { totalAmount },
+      });
       return invoiceId;
     });
   }

@@ -240,10 +240,11 @@ model ProductPurchasePrice {
 }
 
 model PurchaseInvoice {
-  id         Int      @id @default(autoincrement())
-  workerId   Int
-  supplierId Int
-  date       DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  workerId    Int
+  supplierId  Int
+  totalAmount Decimal  @default(0) @db.Decimal(18, 2)
+  date        DateTime @default(now())
 
   worker               User                     @relation(fields: [workerId], references: [id])
   supplier             Supplier                 @relation(fields: [supplierId], references: [id])
