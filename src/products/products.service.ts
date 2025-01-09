@@ -8,7 +8,6 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductSalePriceDto } from './dto/create-product-sale-price.dto';
-import { CreateProductPurchasePriceDto } from './dto/create-product-purchase-price.dto';
 
 @Injectable()
 export class ProductsService {
@@ -152,23 +151,6 @@ export class ProductsService {
     });
   }
 
-  async setPurchasePrice(
-    productId: number,
-    createProductPurchasePriceDto: CreateProductPurchasePriceDto,
-  ) {
-    const { purchasePrice, unitId } = createProductPurchasePriceDto;
-
-    await this.validateProductAndUnitExistence(productId, unitId);
-
-    return this.prisma.productPurchasePrice.create({
-      data: {
-        purchasePrice: purchasePrice,
-        productId: productId,
-        unitId: unitId,
-        effectiveDate: new Date(),
-      },
-    });
-  }
   async setSalePrice(
     productId: number,
     createProductSalePriceDto: CreateProductSalePriceDto,

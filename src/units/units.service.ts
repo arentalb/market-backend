@@ -61,4 +61,32 @@ export class UnitsService {
     });
     return null;
   }
+
+  private async validateProductAndUnitExistence(
+    productId: number,
+    unitId: number,
+  ) {
+    const product = await this.prismaService.product.findUnique({
+      where: { id: productId },
+    });
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found.`);
+    }
+
+    const productUnit = await this.prismaService.productUnit.findFirst({
+      where: { productId: productId, unitId: unitId },
+    });
+    if (!productUnit) {
+      throw new NotFoundException(
+        `You can not set a price for a unit that is not available for the product.`,
+      );
+    }
+
+    const unit = await this.prismaService.unit.findUnique({
+      where: { id: unitId },
+    });
+    if (!unit) {
+      throw new NotFoundException(`Unit with ID ${unitId} not found.`);
+    }
+  }
 }
