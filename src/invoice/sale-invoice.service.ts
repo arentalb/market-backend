@@ -28,6 +28,8 @@ export class SaleInvoiceService {
         },
       });
 
+      let totalAmount = 0;
+
       for (const product of products) {
         const salePriceInDb =
           await this.productPriceService.getProductFromSellingPrice(
@@ -57,8 +59,13 @@ export class SaleInvoiceService {
           baseUnitQuantity,
           prismaTransaction,
         );
+        totalAmount += salePriceInDb.sellingPrice.toNumber() * product.quantity;
       }
 
+      await prismaTransaction.salesInvoice.update({
+        where: { id: invoice.id },
+        data: { totalAmount },
+      });
       return invoice;
     });
   }
@@ -180,6 +187,9 @@ export class SaleInvoiceService {
         });
       }
 
+      const totals = new Map<number, number>();
+      let totalAmount = 0;
+
       for (const product of products) {
         const salePriceInDb =
           await this.productPriceService.getProductFromSellingPrice(
@@ -209,7 +219,21 @@ export class SaleInvoiceService {
           baseUnitQuantity,
           prismaTransaction,
         );
+
+        totals.set(
+          product.productId,
+          salePriceInDb.sellingPrice.toNumber() * product.quantity,
+        );
       }
+
+      totals.forEach((item) => {
+        totalAmount += item;
+      });
+
+      await prismaTransaction.salesInvoice.update({
+        where: { id: invoice.id },
+        data: { totalAmount },
+      });
 
       return invoiceId;
     });
