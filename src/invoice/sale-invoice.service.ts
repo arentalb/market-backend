@@ -20,11 +20,10 @@ export class SaleInvoiceService {
     const { products } = createDto;
 
     return this.prismaService.$transaction(async (prismaTransaction) => {
-      const invoice = await prismaTransaction.salesInvoice.create({
+      const invoice = await prismaTransaction.saleInvoice.create({
         data: {
-          workerId: workerId,
+          processedBy: workerId,
           totalAmount: 0,
-          date: new Date(),
         },
       });
 
@@ -38,10 +37,10 @@ export class SaleInvoiceService {
             prismaTransaction,
           );
 
-        await prismaTransaction.salesInvoiceItem.create({
+        await prismaTransaction.saleInvoiceItem.create({
           data: {
-            salesInvoiceId: invoice.id,
-            productSellingPriceId: salePriceInDb.id,
+            saleInvoiceId: invoice.id,
+            productSalePriceId: salePriceInDb.id,
             quantity: product.quantity,
           },
         });
@@ -59,10 +58,10 @@ export class SaleInvoiceService {
           baseUnitQuantity,
           prismaTransaction,
         );
-        totalAmount += salePriceInDb.sellingPrice.toNumber() * product.quantity;
+        totalAmount += salePriceInDb.price.toNumber() * product.quantity;
       }
 
-      await prismaTransaction.salesInvoice.update({
+      await prismaTransaction.saleInvoice.update({
         where: { id: invoice.id },
         data: { totalAmount },
       });
@@ -71,14 +70,14 @@ export class SaleInvoiceService {
   }
 
   async findAll(): Promise<SaleInvoiceData[]> {
-    const invoices = await this.prismaService.salesInvoice.findMany({
+    const invoices = await this.prismaService.saleInvoice.findMany({
       include: {
-        worker: {
+        user: {
           select: { name: true },
         },
-        salesInvoiceItems: {
+        saleInvoiceItems: {
           include: {
-            productSellingPrice: {
+            productSalePrice: {
               include: {
                 product: true,
                 unit: true,
@@ -90,29 +89,29 @@ export class SaleInvoiceService {
     });
 
     return invoices.map((invoice) => {
-      const products = invoice.salesInvoiceItems.map((item) => ({
-        productName: item.productSellingPrice.product.name,
+      const products = invoice.saleInvoiceItems.map((item) => ({
+        productName: item.productSalePrice.product.name,
         quantity: item.quantity.toNumber(),
-        price: item.productSellingPrice.sellingPrice.toNumber(),
-        unitSymbol: item.productSellingPrice.unit.unitSymbol,
+        price: item.productSalePrice.price.toNumber(),
+        unitSymbol: item.productSalePrice.unit.unitSymbol,
       }));
 
       return {
         invoiceId: invoice.id,
-        workerName: invoice.worker.name,
+        workerName: invoice.user.name,
         products,
       };
     });
   }
 
   async findOne(id: number): Promise<SaleInvoiceData> {
-    const invoice = await this.prismaService.salesInvoice.findUnique({
+    const invoice = await this.prismaService.saleInvoice.findUnique({
       where: { id },
       include: {
-        worker: { select: { name: true } },
-        salesInvoiceItems: {
+        user: { select: { name: true } },
+        saleInvoiceItems: {
           include: {
-            productSellingPrice: {
+            productSalePrice: {
               include: {
                 product: true,
                 unit: true,
@@ -127,16 +126,16 @@ export class SaleInvoiceService {
       throw new NotFoundException(`Invoice with id ${id} not found`);
     }
 
-    const products = invoice.salesInvoiceItems.map((item) => ({
-      productName: item.productSellingPrice.product.name,
+    const products = invoice.saleInvoiceItems.map((item) => ({
+      productName: item.productSalePrice.product.name,
       quantity: item.quantity.toNumber(),
-      price: item.productSellingPrice.sellingPrice.toNumber(),
-      unitSymbol: item.productSellingPrice.unit.unitSymbol,
+      price: item.productSalePrice.price.toNumber(),
+      unitSymbol: item.productSalePrice.unit.unitSymbol,
     }));
 
     return {
       invoiceId: invoice.id,
-      workerName: invoice.worker.name,
+      workerName: invoice.user.name,
       products,
     };
   }
@@ -145,7 +144,7 @@ export class SaleInvoiceService {
     const { products } = updateDto;
 
     return this.prismaService.$transaction(async (prismaTransaction) => {
-      const invoice = await prismaTransaction.salesInvoice.findUnique({
+      const invoice = await prismaTransaction.saleInvoice.findUnique({
         where: { id: invoiceId },
       });
 
@@ -153,36 +152,34 @@ export class SaleInvoiceService {
         throw new NotFoundException(`Invoice with id ${invoiceId} not found`);
       }
 
-      await prismaTransaction.salesInvoice.update({
+      await prismaTransaction.saleInvoice.update({
         where: { id: invoiceId },
-        data: {
-          date: new Date(),
-        },
+        data: {},
       });
 
-      const existingItems = await prismaTransaction.salesInvoiceItem.findMany({
-        where: { salesInvoiceId: invoiceId },
+      const existingItems = await prismaTransaction.saleInvoiceItem.findMany({
+        where: { saleInvoiceId: invoiceId },
         include: {
-          productSellingPrice: true,
+          productSalePrice: true,
         },
       });
 
       for (const item of existingItems) {
         const baseUnitQuantity =
           await this.unitConversionService.calculateQuantityInBaseUnitByProductId(
-            item.productSellingPrice.productId,
-            item.productSellingPrice.unitId,
+            item.productSalePrice.productId,
+            item.productSalePrice.unitId,
             item.quantity.toNumber(),
             prismaTransaction,
           );
 
         await this.inventoryService.increaseInventory(
-          item.productSellingPrice.productId,
+          item.productSalePrice.productId,
           baseUnitQuantity,
           prismaTransaction,
         );
 
-        await prismaTransaction.salesInvoiceItem.delete({
+        await prismaTransaction.saleInvoiceItem.delete({
           where: { id: item.id },
         });
       }
@@ -198,10 +195,10 @@ export class SaleInvoiceService {
             prismaTransaction,
           );
 
-        await prismaTransaction.salesInvoiceItem.create({
+        await prismaTransaction.saleInvoiceItem.create({
           data: {
-            salesInvoiceId: invoice.id,
-            productSellingPriceId: salePriceInDb.id,
+            saleInvoiceId: invoice.id,
+            productSalePriceId: salePriceInDb.id,
             quantity: product.quantity,
           },
         });
@@ -222,7 +219,7 @@ export class SaleInvoiceService {
 
         totals.set(
           product.productId,
-          salePriceInDb.sellingPrice.toNumber() * product.quantity,
+          salePriceInDb.price.toNumber() * product.quantity,
         );
       }
 
@@ -230,7 +227,7 @@ export class SaleInvoiceService {
         totalAmount += item;
       });
 
-      await prismaTransaction.salesInvoice.update({
+      await prismaTransaction.saleInvoice.update({
         where: { id: invoice.id },
         data: { totalAmount },
       });
@@ -240,18 +237,18 @@ export class SaleInvoiceService {
   }
   async remove(id: number) {
     return this.prismaService.$transaction(async (prismaClient) => {
-      const existing = await prismaClient.salesInvoice.findUnique({
+      const existing = await prismaClient.saleInvoice.findUnique({
         where: { id },
       });
       if (!existing) {
         throw new NotFoundException(`Invoice with id ${id} not found`);
       }
 
-      await prismaClient.salesInvoiceItem.deleteMany({
-        where: { salesInvoiceId: id },
+      await prismaClient.saleInvoiceItem.deleteMany({
+        where: { saleInvoiceId: id },
       });
 
-      await prismaClient.salesInvoice.delete({
+      await prismaClient.saleInvoice.delete({
         where: { id },
       });
 

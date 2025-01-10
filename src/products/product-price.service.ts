@@ -18,7 +18,7 @@ export class ProductPriceService {
       data: {
         productId,
         unitId,
-        purchasePrice,
+        price: purchasePrice,
         effectiveDate: new Date(),
       },
     });
@@ -31,7 +31,7 @@ export class ProductPriceService {
   ) {
     const prismaClient = prismaTransaction || this.prismaService;
 
-    return prismaClient.productSellingPrice.findFirst({
+    return prismaClient.productSalePrice.findFirst({
       where: {
         productId,
         unitId,
@@ -49,11 +49,11 @@ export class ProductPriceService {
   ) {
     const prismaClient = prismaTransaction || this.prismaService;
 
-    return prismaClient.productSellingPrice.create({
+    return prismaClient.productSalePrice.create({
       data: {
         productId,
         unitId,
-        sellingPrice,
+        price: sellingPrice,
         effectiveDate: new Date(),
       },
     });

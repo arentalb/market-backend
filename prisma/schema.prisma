@@ -19,18 +19,6 @@ enum PaymentType {
   Hourly
 }
 
-enum PurchaseDebtStatus {
-  unpaid
-  partially_paid
-  paid
-}
-
-enum SalesDebtStatus {
-  unpaid
-  partially_paid
-  paid
-}
-
 enum PurchaseReturnStatus {
   pending
   approved
@@ -38,25 +26,40 @@ enum PurchaseReturnStatus {
   rejected
 }
 
+enum InvoiceStatus {
+  OPEN
+  PARTIALLY_PAID
+  PAID
+  CANCELED
+}
+
+enum PurchaseReturnReason {
+  expired
+  other
+}
+
+// USER-RELATED MODELS
 model User {
-  id          Int    @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
   password    String
-  email       String @unique
+  email       String   @unique
   phoneNumber String
   role        Role
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
 
-  employee                Employee?
-  salesInvoices           SalesInvoice[]
-  purchaseInvoices        PurchaseInvoice[]
-  purchaseInvoicePayments PurchaseInvoicePayment[]
-  purchaseDebts           PurchaseDebt[]
-  salesInvoicePayments    SalesInvoicePayment[]
-  salesDebts              SalesDebt[]
-  missingProducts         MissingProduct[]
-  customerReturnPayments  CustomerReturnPayment[]
-  purchaseReturns         PurchaseReturn[]
-  purchaseReturnPayments  PurchaseReturnPayment[]
+  employee                  Employee?
+  missingProducts           MissingProduct[]
+  saleInvoices              SaleInvoice[]
+  purchaseInvoices          PurchaseInvoice[]
+  purchaseDebts             PurchaseDebt[]
+  saleDebts                 SaleDebt[]
+  saleReturns               SaleReturn[]
+  purchaseReturnsReturnedBy PurchaseReturn[]  @relation("PurchaseReturn_returnedBy")
+  purchaseReturnsMoneyTaken PurchaseReturn[]  @relation("PurchaseReturn_moneyTakenBy")
+
+  @@index([email])
 }
 
 model Employee {
@@ -66,10 +69,15 @@ model Employee {
   hourlyPay   Decimal?    @db.Decimal(18, 2)
   monthlyPay  Decimal?    @db.Decimal(18, 2)
   dateOfHire  DateTime
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  user       User                @relation(fields: [userId], references: [id])
-  timeShifts EmployeeTimeShift[]
-  expenses   EmployeeExpense[]
+  user User @relation(fields: [userId], references: [id])
+
+  employeeTimeShift EmployeeTimeShift[]
+  employeeExpense   EmployeeExpense[]
+
+  @@index([userId], map: "idx_employee_userId_unique")
 }
 
 model EmployeeTimeShift {
@@ -78,10 +86,11 @@ model EmployeeTimeShift {
   workDate      DateTime
   startWorkTime DateTime
   endWorkTime   DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id])
 
-  // @@unique([employeeId, workDate])
   @@index([employeeId])
   @@index([workDate])
 }
@@ -94,71 +103,85 @@ model EmployeeExpense {
   totalHours   Decimal?    @db.Decimal(18, 2)
   hourlyPaid   Decimal?    @db.Decimal(18, 2)
   totalPaid    Decimal     @db.Decimal(18, 2)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id])
 
-  // @@unique([employeeId, paymentMonth])
-  // @@index([employeeId, paymentMonth])
+  @@index([employeeId])
+  @@index([paymentMonth])
 }
 
+// PRODUCT-RELATED MODELS
 model Category {
-  id   Int    @id @default(autoincrement())
-  name String @unique
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   products Product[]
+
+  @@index([name])
 }
 
 model Unit {
-  id         Int    @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   unitName   String
-  unitSymbol String @unique
+  unitSymbol String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  baseProducts         Product[]              @relation("BaseUnit")
-  productUnits         ProductUnit[]
-  unitConversionsFrom  UnitConversion[]       @relation("FromUnit")
-  unitConversionsTo    UnitConversion[]       @relation("ToUnit")
-  ProductSellingPrice  ProductSellingPrice[]
-  ProductPurchasePrice ProductPurchasePrice[]
+  products              Product[]              @relation("BaseUnitRelation")
+  productUnits          ProductUnit[]
+  conversionsFrom       UnitConversion[]       @relation("FromUnit")
+  conversionsTo         UnitConversion[]       @relation("ToUnit")
+  productSalePrices     ProductSalePrice[]
+  productPurchasePrices ProductPurchasePrice[]
+
+  @@index([unitSymbol])
 }
 
 model Product {
-  id          Int     @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
   categoryId  Int
   baseUnitId  Int
   description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  category              Category               @relation(fields: [categoryId], references: [id])
-  baseUnit              Unit                   @relation("BaseUnit", fields: [baseUnitId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+  baseUnit Unit     @relation("BaseUnitRelation", fields: [baseUnitId], references: [id])
+
   productUnits          ProductUnit[]
-  productSellingPrices  ProductSellingPrice[]
+  productSalePrices     ProductSalePrice[]
   productPurchasePrices ProductPurchasePrice[]
-  inventory             Inventory[]
-  salesInvoiceItems     SalesInvoiceItem[]
-  missingProducts       MissingProduct[]
-  customerReturns       CustomerReturn[]
-  purchaseReturns       PurchaseReturn[]
+  inventory             Inventory?
 
   @@index([categoryId])
   @@index([baseUnitId])
+  @@index([name])
 }
 
 model ProductUnit {
   productId Int
   unitId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id])
   unit    Unit    @relation(fields: [unitId], references: [id])
 
   @@id([productId, unitId])
-  @@index([unitId])
 }
 
 model UnitConversion {
-  id             Int     @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   fromUnitId     Int
   toUnitId       Int
-  conversionRate Decimal @db.Decimal(18, 6)
+  conversionRate Decimal  @db.Decimal(18, 6)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   fromUnit Unit @relation("FromUnit", fields: [fromUnitId], references: [id])
   toUnit   Unit @relation("ToUnit", fields: [toUnitId], references: [id])
@@ -167,135 +190,251 @@ model UnitConversion {
 }
 
 model Inventory {
-  id        Int     @id @default(autoincrement())
-  productId Int     @unique
-  quantity  Decimal @db.Decimal(18, 2)
+  id        Int      @id @default(autoincrement())
+  productId Int      @unique()
+  quantity  Decimal  @db.Decimal(18, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id])
 }
 
-model SalesInvoice {
-  id          Int      @id @default(autoincrement())
-  workerId    Int
-  date        DateTime @default(now())
-  totalAmount Decimal  @db.Decimal(18, 2)
+model MissingProduct {
+  id                     Int      @id @default(autoincrement())
+  productPurchasePriceId Int
+  quantity               Decimal  @db.Decimal(18, 2)
+  processedByUserId      Int?
+  notes                  String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
-  worker            User                  @relation(fields: [workerId], references: [id])
-  salesInvoiceItems SalesInvoiceItem[]
-  payments          SalesInvoicePayment[]
-  debts             SalesDebt[]
+  productPurchasePrice ProductPurchasePrice @relation(fields: [productPurchasePriceId], references: [id])
+  processedByUser      User?                @relation(fields: [processedByUserId], references: [id])
 
-  @@index([workerId])
-  @@index([date])
+  @@index([productPurchasePriceId])
+  @@index([processedByUserId])
 }
 
-model SalesInvoiceItem {
-  id                    Int     @id @default(autoincrement())
-  productSellingPriceId Int
-  salesInvoiceId        Int
-  quantity              Decimal @db.Decimal(18, 2)
-
-  productSellingPrice ProductSellingPrice @relation(fields: [productSellingPriceId], references: [id])
-  salesInvoice        SalesInvoice        @relation(fields: [salesInvoiceId], references: [id])
-  Product             Product?            @relation(fields: [productId], references: [id])
-  productId           Int?
-
-  @@index([salesInvoiceId])
-  @@index([productSellingPriceId])
-}
-
-model ProductSellingPrice {
+// PRICING-RELATED MODELS
+model ProductSalePrice {
   id            Int      @id @default(autoincrement())
   productId     Int
   unitId        Int
-  sellingPrice  Decimal  @db.Decimal(18, 2)
+  price         Decimal  @db.Decimal(18, 2)
   effectiveDate DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  product           Product            @relation(fields: [productId], references: [id])
-  unit              Unit               @relation(fields: [unitId], references: [id])
-  salesInvoiceItems SalesInvoiceItem[]
-  missingProducts   MissingProduct[]
-  customerReturns   CustomerReturn[]
+  product Product @relation(fields: [productId], references: [id])
+  unit    Unit    @relation(fields: [unitId], references: [id])
+
+  saleInvoiceItem SaleInvoiceItem[]
+  SaleReturn      SaleReturn[]
 
   @@unique([productId, unitId, effectiveDate])
-  @@index([productId])
-  @@index([unitId])
 }
 
 model ProductPurchasePrice {
   id            Int      @id @default(autoincrement())
   productId     Int
   unitId        Int
-  purchasePrice Decimal  @db.Decimal(18, 2)
+  price         Decimal  @db.Decimal(18, 2)
   effectiveDate DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  product              Product               @relation(fields: [productId], references: [id])
-  unit                 Unit                  @relation(fields: [unitId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  unit    Unit    @relation(fields: [unitId], references: [id])
+
+  missingProducts      MissingProduct[]
   purchaseInvoiceItems PurchaseInvoiceItem[]
   purchaseReturns      PurchaseReturn[]
 
   @@unique([productId, unitId, effectiveDate])
-  @@index([productId])
-  @@index([unitId])
+}
+
+// INVOICE-RELATED MODELS
+model SaleInvoice {
+  id          Int           @id @default(autoincrement())
+  processedBy Int
+  totalAmount Decimal       @default(0.00) @db.Decimal(18, 2)
+  paidSoFar   Decimal       @default(0.00) @db.Decimal(18, 2)
+  status      InvoiceStatus @default(OPEN)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user             User              @relation(fields: [processedBy], references: [id])
+  saleInvoiceItems SaleInvoiceItem[]
+  saleDebts        SaleDebt[]
+
+  @@index([processedBy])
+  @@index([status])
+}
+
+model SaleInvoiceItem {
+  id                 Int      @id @default(autoincrement())
+  productSalePriceId Int
+  saleInvoiceId      Int
+  quantity           Decimal  @db.Decimal(18, 2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  productSalePrice ProductSalePrice @relation(fields: [productSalePriceId], references: [id])
+  saleInvoice      SaleInvoice      @relation(fields: [saleInvoiceId], references: [id])
+
+  @@index([productSalePriceId])
+  @@index([saleInvoiceId])
 }
 
 model PurchaseInvoice {
-  id          Int      @id @default(autoincrement())
-  workerId    Int
+  id          Int           @id @default(autoincrement())
+  processedBy Int
   supplierId  Int
-  totalAmount Decimal  @default(0) @db.Decimal(18, 2)
-  date        DateTime @default(now())
+  totalAmount Decimal       @default(0.00) @db.Decimal(18, 2)
+  paidSoFar   Decimal       @default(0.00) @db.Decimal(18, 2)
+  status      InvoiceStatus @default(OPEN)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  worker               User                     @relation(fields: [workerId], references: [id])
-  supplier             Supplier                 @relation(fields: [supplierId], references: [id])
+  user     User     @relation(fields: [processedBy], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+
   purchaseInvoiceItems PurchaseInvoiceItem[]
-  payments             PurchaseInvoicePayment[]
-  debts                PurchaseDebt[]
+  purchaseDebts        PurchaseDebt[]
   purchaseReturns      PurchaseReturn[]
 
-  @@index([workerId])
+  @@index([processedBy])
   @@index([supplierId])
-  @@index([date])
+  @@index([status])
 }
 
 model PurchaseInvoiceItem {
-  id                     Int     @id @default(autoincrement())
+  id                     Int      @id @default(autoincrement())
   productPurchasePriceId Int
   purchaseInvoiceId      Int
-  quantity               Decimal @db.Decimal(18, 2)
+  quantity               Decimal  @db.Decimal(18, 2)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   productPurchasePrice ProductPurchasePrice @relation(fields: [productPurchasePriceId], references: [id])
   purchaseInvoice      PurchaseInvoice      @relation(fields: [purchaseInvoiceId], references: [id])
 
-  @@index([purchaseInvoiceId])
   @@index([productPurchasePriceId])
+  @@index([purchaseInvoiceId])
 }
 
-model Supplier {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
-  contactInfo String?
+// DEBT-RELATED MODELS
+model PurchaseDebt {
+  id                Int      @id @default(autoincrement())
+  purchaseInvoiceId Int
+  amount            Int
+  processedBy       Int
+  supplierId        Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  purchaseInvoices        PurchaseInvoice[]
-  purchaseReturns         PurchaseReturn[]
-  purchaseInvoicePayments PurchaseInvoicePayment[]
-  PurchaseDebt            PurchaseDebt[]
+  purchaseInvoice PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id])
+  user            User            @relation(fields: [processedBy], references: [id])
+  supplier        Supplier?       @relation(fields: [supplierId], references: [id])
+
+  @@index([purchaseInvoiceId])
+  @@index([processedBy])
+  @@index([supplierId])
+}
+
+model SaleDebt {
+  id            Int      @id @default(autoincrement())
+  saleInvoiceId Int
+  amount        Int
+  processedBy   Int
+  customerId    Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  saleInvoice SaleInvoice @relation(fields: [saleInvoiceId], references: [id])
+  user        User        @relation(fields: [processedBy], references: [id])
+  customer    Customer    @relation(fields: [customerId], references: [id])
+
+  @@index([saleInvoiceId])
+  @@index([processedBy])
+  @@index([customerId])
+}
+
+// RETURN-RELATED MODELS
+model SaleReturn {
+  id                 Int      @id @default(autoincrement())
+  reason             String?
+  quantity           Decimal  @db.Decimal(18, 2)
+  productSalePriceId Int
+  processedBy        Int
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  productSalePrice ProductSalePrice @relation(fields: [productSalePriceId], references: [id])
+  user             User             @relation(fields: [processedBy], references: [id])
+
+  @@index([productSalePriceId])
+  @@index([processedBy])
+}
+
+model PurchaseReturn {
+  id                     Int                  @id @default(autoincrement())
+  quantity               Decimal              @db.Decimal(18, 2)
+  status                 PurchaseReturnStatus @default(pending)
+  reason                 PurchaseReturnReason @default(other)
+  totalAmount            Decimal              @default(0.00) @db.Decimal(18, 2)
+  refundAmount           Decimal              @default(0.00) @db.Decimal(18, 2)
+  supplierId             Int
+  productPurchasePriceId Int
+  returnedBy             Int
+  moneyTakenBy           Int?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  supplier             Supplier             @relation(fields: [supplierId], references: [id])
+  productPurchasePrice ProductPurchasePrice @relation(fields: [productPurchasePriceId], references: [id])
+
+  returnedByUser    User             @relation("PurchaseReturn_returnedBy", fields: [returnedBy], references: [id])
+  moneyTakenByUser  User?            @relation("PurchaseReturn_moneyTakenBy", fields: [moneyTakenBy], references: [id])
+  PurchaseInvoice   PurchaseInvoice? @relation(fields: [purchaseInvoiceId], references: [id])
+  purchaseInvoiceId Int?
+
+  @@index([supplierId])
+  @@index([productPurchasePriceId])
+  @@index([returnedBy])
+  @@index([moneyTakenBy])
+  @@index([status])
+}
+
+// OTHER MODELS
+model Supplier {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  contactInfo String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchaseInvoices PurchaseInvoice[]
+  purchaseDebts    PurchaseDebt[]
+  purchaseReturns  PurchaseReturn[]
 
   @@index([name])
 }
 
 model Expense {
-  id     Int      @id @default(autoincrement())
-  amount Decimal  @db.Decimal(18, 2)
-  note   String?
-  date   DateTime
+  id        Int      @id @default(autoincrement())
+  amount    Decimal  @db.Decimal(18, 2)
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Income {
-  id     Int      @id @default(autoincrement())
-  amount Decimal  @db.Decimal(18, 2)
-  note   String?
-  date   DateTime
+  id        Int      @id @default(autoincrement())
+  amount    Decimal  @db.Decimal(18, 2)
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Customer {
@@ -304,218 +443,9 @@ model Customer {
   lastName  String
   phone     String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  salesInvoicePayments SalesInvoicePayment[]
-  salesDebts           SalesDebt[]
-  customerReturns      CustomerReturn[]
+  saleDebts SaleDebt[]
 
   @@index([firstName, lastName])
-}
-
-model PurchaseInvoicePayment {
-  id                Int      @id @default(autoincrement())
-  paymentDate       DateTime
-  totalAmount       Decimal  @db.Decimal(18, 2)
-  paidAmount        Decimal  @db.Decimal(18, 2)
-  purchaseInvoiceId Int
-  processedBy       Int
-  supplierId        Int
-
-  purchaseInvoice      PurchaseInvoice       @relation(fields: [purchaseInvoiceId], references: [id])
-  processedByUser      User                  @relation(fields: [processedBy], references: [id])
-  supplier             Supplier              @relation(fields: [supplierId], references: [id])
-  purchaseDebtPayments PurchaseDebtPayment[]
-
-  @@index([purchaseInvoiceId])
-  @@index([paymentDate])
-  @@index([processedBy])
-}
-
-model PurchaseDebt {
-  id                Int                @id @default(autoincrement())
-  debtDate          DateTime
-  status            PurchaseDebtStatus @default(unpaid)
-  originalAmount    Decimal            @db.Decimal(18, 2)
-  remainingAmount   Decimal            @db.Decimal(18, 2)
-  notes             String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime?
-  processedBy       Int
-  purchaseInvoiceId Int
-  supplierId        Int
-
-  processedByUser      User                  @relation(fields: [processedBy], references: [id])
-  purchaseInvoice      PurchaseInvoice       @relation(fields: [purchaseInvoiceId], references: [id])
-  supplier             Supplier              @relation(fields: [supplierId], references: [id])
-  purchaseDebtPayments PurchaseDebtPayment[]
-
-  @@index([purchaseInvoiceId])
-  @@index([status])
-  @@index([processedBy])
-  @@index([supplierId])
-}
-
-model PurchaseDebtPayment {
-  id                       Int      @id @default(autoincrement())
-  debtId                   Int
-  purchaseInvoicePaymentId Int
-  amount                   Decimal  @db.Decimal(18, 2)
-  paymentDate              DateTime @default(now())
-
-  debt                   PurchaseDebt           @relation(fields: [debtId], references: [id])
-  purchaseInvoicePayment PurchaseInvoicePayment @relation(fields: [purchaseInvoicePaymentId], references: [id])
-
-  @@index([debtId])
-  @@index([purchaseInvoicePaymentId])
-}
-
-model SalesInvoicePayment {
-  id             Int      @id @default(autoincrement())
-  paymentDate    DateTime
-  totalAmount    Decimal  @db.Decimal(18, 2)
-  paidAmount     Decimal  @db.Decimal(18, 2)
-  salesInvoiceId Int
-  processedBy    Int
-  customerId     Int
-
-  salesInvoice      SalesInvoice       @relation(fields: [salesInvoiceId], references: [id])
-  processedByUser   User               @relation(fields: [processedBy], references: [id])
-  customer          Customer           @relation(fields: [customerId], references: [id])
-  salesDebtPayments SalesDebtPayment[]
-
-  @@index([salesInvoiceId])
-  @@index([paymentDate])
-  @@index([processedBy])
-}
-
-model SalesDebt {
-  id              Int             @id @default(autoincrement())
-  debtDate        DateTime
-  status          SalesDebtStatus @default(unpaid)
-  originalAmount  Decimal         @db.Decimal(18, 2)
-  remainingAmount Decimal         @db.Decimal(18, 2)
-  notes           String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime?
-  processedBy     Int
-  salesInvoiceId  Int
-  customerId      Int
-
-  processedByUser   User               @relation(fields: [processedBy], references: [id])
-  salesInvoice      SalesInvoice       @relation(fields: [salesInvoiceId], references: [id])
-  customer          Customer           @relation(fields: [customerId], references: [id])
-  salesDebtPayments SalesDebtPayment[]
-
-  @@index([salesInvoiceId])
-  @@index([status])
-  @@index([processedBy])
-  @@index([customerId])
-}
-
-model SalesDebtPayment {
-  id                    Int      @id @default(autoincrement())
-  debtId                Int
-  salesInvoicePaymentId Int
-  amount                Decimal  @db.Decimal(18, 2)
-  paymentDate           DateTime @default(now())
-
-  debt                SalesDebt           @relation(fields: [debtId], references: [id])
-  salesInvoicePayment SalesInvoicePayment @relation(fields: [salesInvoicePaymentId], references: [id])
-
-  @@index([debtId])
-  @@index([salesInvoicePaymentId])
-}
-
-model MissingProduct {
-  id                    Int     @id @default(autoincrement())
-  productSellingPriceId Int
-  quantity              Decimal @db.Decimal(18, 2)
-  processedBy           Int?
-  notes                 String?
-
-  productSellingPrice ProductSellingPrice @relation(fields: [productSellingPriceId], references: [id])
-  processedByUser     User?               @relation(fields: [processedBy], references: [id])
-  Product             Product?            @relation(fields: [productId], references: [id])
-  productId           Int?
-
-  @@index([processedBy])
-  @@index([productSellingPriceId])
-}
-
-model CustomerReturn {
-  id                    Int      @id @default(autoincrement())
-  returnDate            DateTime @default(now())
-  reason                String?
-  quantity              Decimal  @db.Decimal(18, 2)
-  productSellingPriceId Int
-
-  productSellingPrice    ProductSellingPrice     @relation(fields: [productSellingPriceId], references: [id])
-  customerReturnPayments CustomerReturnPayment[]
-  Product                Product?                @relation(fields: [productId], references: [id])
-  productId              Int?
-  Customer               Customer?               @relation(fields: [customerId], references: [id])
-  customerId             Int?
-
-  @@index([productSellingPriceId])
-}
-
-model CustomerReturnPayment {
-  id               Int      @id @default(autoincrement())
-  customerReturnId Int
-  refundPrice      Decimal  @db.Decimal(18, 2)
-  refundAmount     Decimal  @db.Decimal(18, 2)
-  refundDate       DateTime @default(now())
-  processedBy      Int?
-  notes            String?
-
-  customerReturn  CustomerReturn @relation(fields: [customerReturnId], references: [id])
-  processedByUser User?          @relation(fields: [processedBy], references: [id])
-
-  @@index([customerReturnId])
-  @@index([processedBy])
-  @@index([refundDate])
-}
-
-model PurchaseReturn {
-  id                     Int                  @id @default(autoincrement())
-  returnDate             DateTime             @default(now())
-  supplierId             Int
-  processedBy            Int
-  status                 PurchaseReturnStatus @default(pending)
-  totalAmount            Decimal              @default(0.00) @db.Decimal(18, 2)
-  refundAmount           Decimal              @default(0.00) @db.Decimal(18, 2)
-  notes                  String?
-  productPurchasePriceId Int
-  reason                 String?
-  quantity               Decimal              @db.Decimal(18, 2)
-
-  supplier               Supplier                @relation(fields: [supplierId], references: [id])
-  processedByUser        User                    @relation(fields: [processedBy], references: [id])
-  productPurchasePrice   ProductPurchasePrice    @relation(fields: [productPurchasePriceId], references: [id])
-  purchaseReturnPayments PurchaseReturnPayment[]
-  Product                Product?                @relation(fields: [productId], references: [id])
-  productId              Int?
-  PurchaseInvoice        PurchaseInvoice?        @relation(fields: [purchaseInvoiceId], references: [id])
-  purchaseInvoiceId      Int?
-
-  @@index([supplierId])
-  @@index([processedBy])
-  @@index([status])
-  @@index([returnDate])
-}
-
-model PurchaseReturnPayment {
-  id               Int      @id @default(autoincrement())
-  purchaseReturnId Int
-  paymentDate      DateTime @default(now())
-  amount           Decimal  @db.Decimal(18, 2)
-  reference        String?
-  notes            String?
-
-  purchaseReturn PurchaseReturn @relation(fields: [purchaseReturnId], references: [id])
-  User           User?          @relation(fields: [userId], references: [id])
-  userId         Int?
-
-  @@index([purchaseReturnId])
-  @@index([paymentDate])
 }

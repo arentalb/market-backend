@@ -159,9 +159,9 @@ export class ProductsService {
 
     await this.validateProductAndUnitExistence(productId, unitId);
 
-    return this.prisma.productSellingPrice.create({
+    return this.prisma.productSalePrice.create({
       data: {
-        sellingPrice: sellingPrice,
+        price: sellingPrice,
         productId: productId,
         unitId: unitId,
         effectiveDate: new Date(),

@@ -24,8 +24,7 @@ export class PurchaseInvoiceService {
       const invoice = await prismaTransaction.purchaseInvoice.create({
         data: {
           supplierId,
-          workerId: userId,
-          date: new Date(),
+          processedBy: userId,
         },
       });
 
@@ -61,8 +60,7 @@ export class PurchaseInvoiceService {
           prismaTransaction,
         );
 
-        totalAmount +=
-          purchasePrice.purchasePrice.toNumber() * product.quantity;
+        totalAmount += purchasePrice.price.toNumber() * product.quantity;
       }
 
       await prismaTransaction.purchaseInvoice.update({
@@ -79,7 +77,7 @@ export class PurchaseInvoiceService {
         supplier: {
           select: { name: true },
         },
-        worker: {
+        user: {
           select: { name: true },
         },
         purchaseInvoiceItems: {
@@ -99,14 +97,14 @@ export class PurchaseInvoiceService {
       const products = invoice.purchaseInvoiceItems.map((item) => ({
         productName: item.productPurchasePrice.product.name,
         quantity: item.quantity.toNumber(),
-        price: item.productPurchasePrice.purchasePrice.toNumber(),
+        price: item.productPurchasePrice.price.toNumber(),
         unitSymbol: item.productPurchasePrice.unit.unitSymbol,
       }));
 
       return {
         invoiceId: invoice.id,
         supplierName: invoice.supplier.name,
-        workerName: invoice.worker.name,
+        workerName: invoice.user.name,
         products,
       };
     });
@@ -117,7 +115,7 @@ export class PurchaseInvoiceService {
       where: { id },
       include: {
         supplier: { select: { name: true } },
-        worker: { select: { name: true } },
+        user: { select: { name: true } },
         purchaseInvoiceItems: {
           include: {
             productPurchasePrice: {
@@ -138,14 +136,14 @@ export class PurchaseInvoiceService {
     const products = invoice.purchaseInvoiceItems.map((item) => ({
       productName: item.productPurchasePrice.product.name,
       quantity: item.quantity.toNumber(),
-      price: item.productPurchasePrice.purchasePrice.toNumber(),
+      price: item.productPurchasePrice.price.toNumber(),
       unitSymbol: item.productPurchasePrice.unit.unitSymbol,
     }));
 
     return {
       invoiceId: invoice.id,
       supplierName: invoice.supplier.name,
-      workerName: invoice.worker.name,
+      workerName: invoice.user.name,
       products,
     };
   }
@@ -173,7 +171,6 @@ export class PurchaseInvoiceService {
         where: { id: invoiceId },
         data: {
           supplierId,
-          date: new Date(),
         },
       });
 
@@ -232,8 +229,7 @@ export class PurchaseInvoiceService {
           baseUnitQuantity,
           prismaTransaction,
         );
-        totalAmount +=
-          purchasePrice.purchasePrice.toNumber() * product.quantity;
+        totalAmount += purchasePrice.price.toNumber() * product.quantity;
       }
       await prismaTransaction.purchaseInvoice.update({
         where: { id: invoice.id },
