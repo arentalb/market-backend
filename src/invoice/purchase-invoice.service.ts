@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 import { InventoryService } from 'src/inventory/inventory.service';
 import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
-import { InvoiceData } from './interfaces/invoice-data';
+import { PurchaseInvoiceData } from './interfaces/invoice-data';
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
 import { ProductPriceService } from '../products/product-price.service';
 import { UnitConversionService } from '../units/unit-conversion.service';
@@ -73,7 +73,7 @@ export class PurchaseInvoiceService {
     });
   }
 
-  async findAll(): Promise<InvoiceData[]> {
+  async findAll(): Promise<PurchaseInvoiceData[]> {
     const invoices = await this.prismaService.purchaseInvoice.findMany({
       include: {
         supplier: {
@@ -112,7 +112,7 @@ export class PurchaseInvoiceService {
     });
   }
 
-  async findOne(id: number): Promise<InvoiceData> {
+  async findOne(id: number): Promise<PurchaseInvoiceData> {
     const invoice = await this.prismaService.purchaseInvoice.findUnique({
       where: { id },
       include: {

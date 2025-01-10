@@ -5,7 +5,7 @@ interface InvoiceProduct {
   unitSymbol: string;
 }
 
-export interface InvoiceData {
+export interface PurchaseInvoiceData {
   invoiceId: number;
   supplierName: string;
   workerName: string;
