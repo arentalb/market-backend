@@ -53,8 +53,8 @@ model User {
   missingProducts           MissingProduct[]
   saleInvoices              SaleInvoice[]
   purchaseInvoices          PurchaseInvoice[]
-  purchaseDebts             PurchaseDebt[]
-  saleDebts                 SaleDebt[]
+  purchasePayments          PurchasePayment[]
+  salePayments              SalePayment[]
   saleReturns               SaleReturn[]
   purchaseReturnsReturnedBy PurchaseReturn[]  @relation("PurchaseReturn_returnedBy")
   purchaseReturnsMoneyTaken PurchaseReturn[]  @relation("PurchaseReturn_moneyTakenBy")
@@ -255,17 +255,21 @@ model ProductPurchasePrice {
 
 // INVOICE-RELATED MODELS
 model SaleInvoice {
-  id          Int           @id @default(autoincrement())
+  id          Int  @id @default(autoincrement())
   processedBy Int
+  customerId  Int?
+
   totalAmount Decimal       @default(0.00) @db.Decimal(18, 2)
   paidSoFar   Decimal       @default(0.00) @db.Decimal(18, 2)
   status      InvoiceStatus @default(OPEN)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  user             User              @relation(fields: [processedBy], references: [id])
+  user     User      @relation(fields: [processedBy], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+
   saleInvoiceItems SaleInvoiceItem[]
-  saleDebts        SaleDebt[]
+  salePayments     SalePayment[]
 
   @@index([processedBy])
   @@index([status])
@@ -300,7 +304,7 @@ model PurchaseInvoice {
   supplier Supplier @relation(fields: [supplierId], references: [id])
 
   purchaseInvoiceItems PurchaseInvoiceItem[]
-  purchaseDebts        PurchaseDebt[]
+  purchasePayments     PurchasePayment[]
   purchaseReturns      PurchaseReturn[]
 
   @@index([processedBy])
@@ -323,41 +327,35 @@ model PurchaseInvoiceItem {
   @@index([purchaseInvoiceId])
 }
 
-// DEBT-RELATED MODELS
-model PurchaseDebt {
+// PAYMENT-RELATED MODELS
+model PurchasePayment {
   id                Int      @id @default(autoincrement())
   purchaseInvoiceId Int
   amount            Int
   processedBy       Int
-  supplierId        Int?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   purchaseInvoice PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id])
   user            User            @relation(fields: [processedBy], references: [id])
-  supplier        Supplier?       @relation(fields: [supplierId], references: [id])
 
   @@index([purchaseInvoiceId])
   @@index([processedBy])
-  @@index([supplierId])
 }
 
-model SaleDebt {
+model SalePayment {
   id            Int      @id @default(autoincrement())
   saleInvoiceId Int
   amount        Int
   processedBy   Int
-  customerId    Int
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   saleInvoice SaleInvoice @relation(fields: [saleInvoiceId], references: [id])
   user        User        @relation(fields: [processedBy], references: [id])
-  customer    Customer    @relation(fields: [customerId], references: [id])
 
   @@index([saleInvoiceId])
   @@index([processedBy])
-  @@index([customerId])
 }
 
 // RETURN-RELATED MODELS
@@ -415,7 +413,6 @@ model Supplier {
   updatedAt   DateTime @updatedAt
 
   purchaseInvoices PurchaseInvoice[]
-  purchaseDebts    PurchaseDebt[]
   purchaseReturns  PurchaseReturn[]
 
   @@index([name])
@@ -445,7 +442,7 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  saleDebts SaleDebt[]
+  SaleInvoice SaleInvoice[]
 
   @@index([firstName, lastName])
 }
