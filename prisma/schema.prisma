@@ -203,16 +203,16 @@ model MissingProduct {
   id                     Int      @id @default(autoincrement())
   productPurchasePriceId Int
   quantity               Decimal  @db.Decimal(18, 2)
-  processedByUserId      Int?
+  processedBy            Int
   notes                  String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
   productPurchasePrice ProductPurchasePrice @relation(fields: [productPurchasePriceId], references: [id])
-  processedByUser      User?                @relation(fields: [processedByUserId], references: [id])
+  user                 User                 @relation(fields: [processedBy], references: [id])
 
   @@index([productPurchasePriceId])
-  @@index([processedByUserId])
+  @@index([processedBy])
 }
 
 // PRICING-RELATED MODELS

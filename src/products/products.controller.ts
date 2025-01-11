@@ -12,10 +12,16 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateProductSalePriceDto } from './dto/create-product-sale-price.dto';
+import { CreateMissingProductDto } from './dto/create-missing-product.dto';
+import { ActiveUser } from '../auth/decorators/active-user.decorator';
+import { MissingProductService } from './missing-product.service';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly productMissingService: MissingProductService,
+  ) {}
 
   @Post()
   async create(@Body() createProductDto: CreateProductDto) {
@@ -92,6 +98,32 @@ export class ProductsController {
     return {
       message: 'Product selling price added successfully',
       data: { product },
+    };
+  }
+
+  @Post('missing')
+  async addProductMissing(
+    @ActiveUser('id') userId: number,
+    @Body() createMissingProductDto: CreateMissingProductDto,
+  ) {
+    const missingProduct =
+      await this.productMissingService.createMissingProduct(
+        createMissingProductDto,
+        userId,
+      );
+    return {
+      message: 'Missing product added successfully',
+      data: { missingProduct },
+    };
+  }
+
+  @Post('missing')
+  async getAllProductMissing() {
+    const missingProducts =
+      await this.productMissingService.getAllMissingProduct();
+    return {
+      message: 'Missing products fetched successfully',
+      data: { missingProducts },
     };
   }
 }
