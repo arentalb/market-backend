@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { InventoryService } from 'src/inventory/inventory.service';
 import { CreateSaleInvoiceDto } from './dto/create-sale-invoice.dto';
 import { UpdateSaleInvoiceDto } from './dto/update-sale-invoice.dto';
-import { ProductPriceService } from '../products/product-price.service';
+import { ProductPriceService } from '../products/services/product-price.service';
 import { UnitConversionService } from '../units/unit-conversion.service';
 import { SaleInvoiceData } from './interfaces/invoice-data';
 

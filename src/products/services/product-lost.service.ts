@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateMissingProductDto } from './dto/create-missing-product.dto';
+import { PrismaService } from '../../prisma/prisma.service';
+import { CreateMissingProductDto } from '../dto/create-missing-product.dto';
 
 @Injectable()
-export class MissingProductService {
+export class ProductLostService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async createMissingProduct(

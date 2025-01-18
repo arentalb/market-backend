@@ -5,7 +5,7 @@ import { InventoryService } from 'src/inventory/inventory.service';
 import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
 import { PurchaseInvoiceData } from './interfaces/invoice-data';
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
-import { ProductPriceService } from '../products/product-price.service';
+import { ProductPriceService } from '../products/services/product-price.service';
 import { UnitConversionService } from '../units/unit-conversion.service';
 
 @Injectable()
