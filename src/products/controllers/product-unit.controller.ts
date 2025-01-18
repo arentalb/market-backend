@@ -12,7 +12,7 @@ import { ProductUnitService } from '../services/product-unit.service';
 export class ProductUnitController {
   constructor(private readonly productUnitService: ProductUnitService) {}
 
-  @Get('available-units')
+  @Get()
   async findAvailableUnits(@Param('id', ParseIntPipe) id: number) {
     const data = await this.productUnitService.findAvailableUnits(id);
     return { message: 'All applicable units retrieved successfully', data };

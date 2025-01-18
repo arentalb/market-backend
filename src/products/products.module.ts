@@ -5,14 +5,14 @@ import { ProductLostService } from './services/product-lost.service';
 import { ProductUnitService } from './services/product-unit.service';
 import { ProductController } from './controllers/product.controller';
 import { ProductUnitController } from './controllers/product-unit.controller';
-import { ProductPricingController } from './controllers/product-pricing.controller';
+import { ProductPriceController } from './controllers/product-price.controller';
 import { ProductLostController } from './controllers/product-lost.controller';
 
 @Module({
   controllers: [
     ProductController,
     ProductUnitController,
-    ProductPricingController,
+    ProductPriceController,
     ProductLostController,
   ],
   providers: [

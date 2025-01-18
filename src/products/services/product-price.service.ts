@@ -95,6 +95,77 @@ export class ProductPriceService {
     });
   }
 
+  async getSalePriceHistory(id: number) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        baseUnit: true,
+        productSalePrices: {
+          include: {
+            unit: true,
+          },
+        },
+        productUnits: {
+          include: {
+            unit: true,
+          },
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found.`);
+    }
+
+    const unitsMap = new Map();
+
+    product.productUnits.forEach((productUnit) => {
+      unitsMap.set(productUnit.unit.id, {
+        id: productUnit.unit.id,
+        unitName: productUnit.unit.unitName,
+        unitSymbol: productUnit.unit.unitSymbol,
+        createdAt: productUnit.unit.createdAt,
+        updatedAt: productUnit.unit.updatedAt,
+        prices: [],
+        activePrice: null,
+      });
+    });
+
+    product.productSalePrices.forEach((salePrice) => {
+      if (unitsMap.has(salePrice.unitId)) {
+        unitsMap.get(salePrice.unitId).prices.push({
+          id: salePrice.id,
+          price: salePrice.price,
+          effectiveDate: salePrice.effectiveDate,
+        });
+      }
+    });
+
+    unitsMap.forEach((unit) => {
+      unit.prices.sort(
+        (a, b) =>
+          new Date(b.effectiveDate).getTime() -
+          new Date(a.effectiveDate).getTime(),
+      );
+      if (unit.prices.length > 0) {
+        unit.activePrice = unit.prices[0];
+      }
+    });
+
+    const {
+      categoryId,
+      baseUnitId,
+      productSalePrices,
+      productUnits,
+      ...productData
+    } = product;
+
+    return {
+      ...productData,
+      units: Array.from(unitsMap.values()),
+    };
+  }
+
   private async validateProductAndUnitExistence(
     productId: number,
     unitId: number,
