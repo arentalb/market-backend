@@ -54,6 +54,60 @@ export class ProductsService {
     }));
   }
 
+  async findAvailableUnits(productId: number) {
+    const productData = await this.prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        baseUnit: true,
+        productUnits: {
+          include: { unit: true },
+        },
+      },
+    });
+
+    if (!productData) {
+      throw new NotFoundException(`Product with ID ${productId} not found.`);
+    }
+
+    const unitConversions = await this.prisma.unitConversion.findMany({
+      where: {
+        OR: [
+          { fromUnitId: productData.baseUnitId },
+          { toUnitId: productData.baseUnitId },
+        ],
+      },
+    });
+
+    const unitIds = new Set<number>();
+    unitConversions.forEach((conversion) => {
+      if (conversion.fromUnitId !== productData.baseUnitId) {
+        unitIds.add(conversion.fromUnitId);
+      }
+      if (conversion.toUnitId !== productData.baseUnitId) {
+        unitIds.add(conversion.toUnitId);
+      }
+    });
+
+    const units = await this.prisma.unit.findMany({
+      where: { id: { in: Array.from(unitIds) } },
+    });
+
+    const productUnits = productData.productUnits.map(
+      (productUnit) => productUnit.unit,
+    );
+    const addableUnits = units.filter((currentUnit) => {
+      return !productUnits.some(
+        (productUnit) => productUnit.id === currentUnit.id,
+      );
+    });
+
+    return {
+      productBaseUnit: productData.baseUnit,
+      currentProductUnits: productUnits,
+      addableUnits: addableUnits,
+    };
+  }
+
   async findOne(id: number) {
     const product = await this.prisma.product.findUnique({
       where: { id },

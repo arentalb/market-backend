@@ -41,6 +41,18 @@ export class ProductsController {
     };
   }
 
+  @Get('/:id/available-units')
+  async findAvailableUnits(@Param('id', ParseIntPipe) id: number) {
+    const data = await this.productsService.findAvailableUnits(id);
+    return {
+      message: 'All applicable units retrieved successfully',
+      data: {
+        productBaseUnit: data.productBaseUnit,
+        currentProductUnits: data.currentProductUnits,
+        addableUnits: data.addableUnits,
+      },
+    };
+  }
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const product = await this.productsService.findOne(id);
