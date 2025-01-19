@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -26,7 +27,18 @@ export class ProductService {
       );
     }
 
-    return this.prisma.product.create({ data: createProductDto });
+    const createsProduct = await this.prisma.product.create({
+      data: createProductDto,
+    });
+
+    await this.prisma.productUnit.create({
+      data: {
+        productId: createsProduct.id,
+        unitId: baseUnitId,
+      },
+    });
+
+    return createsProduct;
   }
 
   async findAll() {
@@ -61,11 +73,14 @@ export class ProductService {
   }
 
   async update(id: number, updateProductDto: UpdateProductDto) {
-    await this.validateCategoryAndUnitEntities(
-      updateProductDto.baseUnitId,
-      updateProductDto.categoryId,
-    );
-
+    const category = await this.prisma.category.findUnique({
+      where: { id: updateProductDto.categoryId },
+    });
+    if (!category) {
+      throw new NotFoundException(
+        `Category with ID ${updateProductDto.categoryId} not found.`,
+      );
+    }
     const product = await this.prisma.product.findUnique({ where: { id } });
 
     if (!product) {
@@ -84,9 +99,40 @@ export class ProductService {
       throw new NotFoundException(`Product with ID ${id} not found.`);
     }
 
+    await this.prisma.productUnit.deleteMany({
+      where: { productId: id },
+    });
+
+    const hasRelatedRecords = await this.hasRelatedRecords(id);
+    if (hasRelatedRecords) {
+      throw new BadRequestException(
+        `Cannot delete product with ID ${id} because it has related records.`,
+      );
+    }
+
     return this.prisma.product.delete({ where: { id } });
   }
+  private async hasRelatedRecords(productId: number): Promise<boolean> {
+    const relatedCounts = await Promise.all([
+      this.prisma.productSalePrice.count({ where: { productId } }),
+      this.prisma.productPurchasePrice.count({ where: { productId } }),
+      this.prisma.inventory.count({ where: { productId } }),
+      this.prisma.saleInvoiceItem.count({
+        where: { productSalePrice: { productId } },
+      }),
+      this.prisma.purchaseInvoiceItem.count({
+        where: { productPurchasePrice: { productId } },
+      }),
+      this.prisma.saleReturn.count({
+        where: { productSalePrice: { productId } },
+      }),
+      this.prisma.purchaseReturn.count({
+        where: { productPurchasePrice: { productId } },
+      }),
+    ]);
 
+    return relatedCounts.some((count) => count > 0);
+  }
   private async validateCategoryAndUnitEntities(
     baseUnitId: number,
     categoryId: number,
