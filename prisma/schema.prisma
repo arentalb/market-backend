@@ -406,16 +406,31 @@ model PurchaseReturn {
 
 // OTHER MODELS
 model Supplier {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  contactInfo String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   purchaseInvoices PurchaseInvoice[]
   purchaseReturns  PurchaseReturn[]
+  workers          SupplierWorker[]
 
   @@index([name])
+}
+
+model SupplierWorker {
+  id    Int     @id @default(autoincrement())
+  name  String
+  phone String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  supplierId Int
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+  @@index([name])
+  @@index([supplierId])
 }
 
 model Expense {

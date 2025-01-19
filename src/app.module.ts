@@ -13,6 +13,7 @@ import { ProductsModule } from './products/products.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { InvoiceModule } from './invoice/invoice.module';
 import { PaymentModule } from './payment/payment.module';
+import { SupplierModule } from './supplier/supplier.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { PaymentModule } from './payment/payment.module';
     InvoiceModule,
     InventoryModule,
     PaymentModule,
+    SupplierModule,
   ],
   controllers: [AppController],
   providers: [AppService],
