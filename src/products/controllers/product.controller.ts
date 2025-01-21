@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ProductService } from '../services/product.service';
 import { CreateProductDto } from '../dto/create-product.dto';
@@ -30,7 +31,14 @@ export class ProductController {
       data: { products },
     };
   }
-
+  @Get('search')
+  async searchByName(@Query('name') name: string) {
+    const products = await this.productService.searchByName(name);
+    return {
+      message: 'Products retrieved successfully',
+      data: { products },
+    };
+  }
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const product = await this.productService.findOne(id);

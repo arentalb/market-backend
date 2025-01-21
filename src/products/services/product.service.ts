@@ -112,6 +112,41 @@ export class ProductService {
 
     return this.prisma.product.delete({ where: { id } });
   }
+  async searchByName(name: string) {
+    const foundedProducts = await this.prisma.product.findMany({
+      where: {
+        name: {
+          contains: name,
+          mode: 'insensitive',
+        },
+      },
+      include: {
+        productUnits: { include: { unit: true } },
+        baseUnit: true,
+        category: true,
+      },
+    });
+    return foundedProducts.map((product) => ({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      baseUnit: {
+        id: product.baseUnitId,
+        unitName: product.baseUnit.unitName,
+        unitSymbol: product.baseUnit.unitSymbol,
+      },
+      category: {
+        id: product.category.id,
+        name: product.category.name,
+      },
+      productUnits: product.productUnits.map((pu) => ({
+        id: pu.unit.id,
+        unitName: pu.unit.unitName,
+        unitSymbol: pu.unit.unitSymbol,
+      })),
+    }));
+  }
+
   private async hasRelatedRecords(productId: number): Promise<boolean> {
     const relatedCounts = await Promise.all([
       this.prisma.productSalePrice.count({ where: { productId } }),
@@ -133,6 +168,7 @@ export class ProductService {
 
     return relatedCounts.some((count) => count > 0);
   }
+
   private async validateCategoryAndUnitEntities(
     baseUnitId: number,
     categoryId: number,
