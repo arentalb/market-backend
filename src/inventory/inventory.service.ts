@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { UnitConversionService } from '../units/unit-conversion.service';
 
 @Injectable()
 export class InventoryService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly unitConversionService: UnitConversionService,
+  ) {}
 
   async increaseInventory(
     productId: number,
@@ -13,7 +17,10 @@ export class InventoryService {
   ) {
     const prismaClient = prismaTransaction || this.prismaService;
 
-    await prismaClient.inventory.upsert({
+    console.log('----------------------');
+    console.log('productId', productId);
+    console.log('quantity', quantity);
+    const data = await prismaClient.inventory.upsert({
       where: { productId },
       create: {
         productId,
@@ -41,5 +48,59 @@ export class InventoryService {
         },
       },
     });
+  }
+
+  async getInventoryDetail(name: string) {
+    const inventory = await this.prismaService.inventory.findMany({
+      where: {
+        ...(name && {
+          product: {
+            name: {
+              contains: name,
+              mode: 'insensitive',
+            },
+          },
+        }),
+      },
+      include: {
+        product: {
+          include: {
+            baseUnit: true,
+            productUnits: {
+              include: {
+                unit: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const data = await Promise.all(
+      inventory.map(async (inventoryItem) => {
+        const quantityInUnits = await Promise.all(
+          inventoryItem.product.productUnits.map(async (productUnit) => {
+            const convertedQuantity =
+              await this.unitConversionService.calculateQuantityInBaseUnit(
+                productUnit.unitId,
+                inventoryItem.product.baseUnitId,
+                Number(inventoryItem.quantity),
+              );
+            return {
+              unit: productUnit.unit.unitSymbol,
+              quantity: convertedQuantity,
+            };
+          }),
+        );
+
+        return {
+          id: inventoryItem.product.id,
+          name: inventoryItem.product.name,
+          quantityInUnits,
+        };
+      }),
+    );
+
+    return data;
   }
 }
