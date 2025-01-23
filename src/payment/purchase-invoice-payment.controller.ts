@@ -10,7 +10,7 @@ import { PurchaseInvoicePaymentService } from './purchase-invoice-payment.servic
 import { CreatePurchaseInvoicePaymentDto } from './dto/create-purchase-invoice-payment.dto';
 import { ActiveUser } from '../auth/decorators/active-user.decorator';
 
-@Controller('purchase-invoice-payment')
+@Controller('purchase/invoice/payment')
 export class PurchaseInvoicePaymentController {
   constructor(
     private readonly purchaseInvoicePaymentService: PurchaseInvoicePaymentService,

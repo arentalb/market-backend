@@ -3,7 +3,6 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 import { InventoryService } from 'src/inventory/inventory.service';
 import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
-import { PurchaseInvoiceData } from './interfaces/invoice-data';
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
 import { ProductPriceService } from '../products/services/product-price.service';
 import { UnitConversionService } from '../units/unit-conversion.service';
@@ -71,7 +70,7 @@ export class PurchaseInvoiceService {
     });
   }
 
-  async findAll(): Promise<PurchaseInvoiceData[]> {
+  async findAll() {
     const invoices = await this.prismaService.purchaseInvoice.findMany({
       include: {
         supplier: {
@@ -80,37 +79,22 @@ export class PurchaseInvoiceService {
         user: {
           select: { name: true },
         },
-        purchaseInvoiceItems: {
-          include: {
-            productPurchasePrice: {
-              include: {
-                product: true,
-                unit: true,
-              },
-            },
-          },
-        },
       },
     });
 
     return invoices.map((invoice) => {
-      const products = invoice.purchaseInvoiceItems.map((item) => ({
-        productName: item.productPurchasePrice.product.name,
-        quantity: item.quantity.toNumber(),
-        price: item.productPurchasePrice.price.toNumber(),
-        unitSymbol: item.productPurchasePrice.unit.unitSymbol,
-      }));
-
       return {
-        invoiceId: invoice.id,
+        id: invoice.id,
         supplierName: invoice.supplier.name,
         workerName: invoice.user.name,
-        products,
+        totalAmount: invoice.totalAmount,
+        paidSoFar: invoice.paidSoFar,
+        status: invoice.status,
       };
     });
   }
 
-  async findOne(id: number): Promise<PurchaseInvoiceData> {
+  async findOne(id: number) {
     const invoice = await this.prismaService.purchaseInvoice.findUnique({
       where: { id },
       include: {
@@ -126,6 +110,16 @@ export class PurchaseInvoiceService {
             },
           },
         },
+        purchasePayments: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -134,17 +128,30 @@ export class PurchaseInvoiceService {
     }
 
     const products = invoice.purchaseInvoiceItems.map((item) => ({
+      id: item.productPurchasePrice.product.id,
       productName: item.productPurchasePrice.product.name,
       quantity: item.quantity.toNumber(),
       price: item.productPurchasePrice.price.toNumber(),
       unitSymbol: item.productPurchasePrice.unit.unitSymbol,
     }));
 
+    const payments = invoice.purchasePayments.map((payment) => {
+      return {
+        id: payment.id,
+        amount: payment.amount,
+        workerName: payment.user.name,
+        paidAt: payment.user.createdAt,
+      };
+    });
     return {
-      invoiceId: invoice.id,
+      id: invoice.id,
       supplierName: invoice.supplier.name,
       workerName: invoice.user.name,
+      totalAmount: invoice.totalAmount,
+      paidSoFar: invoice.paidSoFar,
+      status: invoice.status,
       products,
+      payments,
     };
   }
 

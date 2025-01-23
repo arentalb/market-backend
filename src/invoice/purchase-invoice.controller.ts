@@ -13,7 +13,7 @@ import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
 import { ActiveUser } from '../auth/decorators/active-user.decorator';
 
-@Controller('purchase-invoice')
+@Controller('purchase')
 export class PurchaseInvoiceController {
   constructor(
     private readonly purchaseInvoiceService: PurchaseInvoiceService,
@@ -34,7 +34,7 @@ export class PurchaseInvoiceController {
     };
   }
 
-  @Get()
+  @Get('invoice')
   async findAll() {
     const invoices = await this.purchaseInvoiceService.findAll();
     return {
@@ -45,7 +45,7 @@ export class PurchaseInvoiceController {
     };
   }
 
-  @Get(':id')
+  @Get('invoice/:id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const invoice = await this.purchaseInvoiceService.findOne(id);
     return {
@@ -56,7 +56,7 @@ export class PurchaseInvoiceController {
     };
   }
 
-  @Patch(':id')
+  @Patch('invoice/:id')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updatePurchaseInvoiceDto: UpdatePurchaseInvoiceDto,
@@ -73,7 +73,7 @@ export class PurchaseInvoiceController {
     };
   }
 
-  @Delete(':id')
+  @Delete('invoice/:id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     const invoice = await this.purchaseInvoiceService.remove(id);
     return {
