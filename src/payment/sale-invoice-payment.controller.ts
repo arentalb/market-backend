@@ -10,7 +10,7 @@ import { SaleInvoicePaymentService } from './sale-invoice-payment.service';
 import { CreateSaleInvoicePaymentDto } from './dto/create-sale-invoice-payment.dto';
 import { ActiveUser } from '../auth/decorators/active-user.decorator';
 
-@Controller('sale-invoice-payment')
+@Controller('sale/invoice/payment')
 export class SaleInvoicePaymentController {
   constructor(
     private readonly saleInvoicePaymentService: SaleInvoicePaymentService,

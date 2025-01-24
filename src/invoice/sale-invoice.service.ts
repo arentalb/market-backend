@@ -5,7 +5,6 @@ import { CreateSaleInvoiceDto } from './dto/create-sale-invoice.dto';
 import { UpdateSaleInvoiceDto } from './dto/update-sale-invoice.dto';
 import { ProductPriceService } from '../products/services/product-price.service';
 import { UnitConversionService } from '../units/unit-conversion.service';
-import { SaleInvoiceData } from './interfaces/invoice-data';
 
 @Injectable()
 export class SaleInvoiceService {
@@ -70,50 +69,48 @@ export class SaleInvoiceService {
 
       return prismaTransaction.saleInvoice.update({
         where: { id: invoice.id },
-        data: { totalAmount, paidSoFar: paidAmount || totalAmount },
+        data: { totalAmount, paidSoFar: paidAmount || 0 },
       });
     });
   }
-  async findAll(): Promise<SaleInvoiceData[]> {
+  async findAll() {
     const invoices = await this.prismaService.saleInvoice.findMany({
       include: {
         user: {
           select: { name: true },
         },
-        saleInvoiceItems: {
+        salePayments: {
           include: {
-            productSalePrice: {
-              include: {
-                product: true,
-                unit: true,
-              },
-            },
+            user: true,
           },
         },
+        customer: true,
       },
     });
 
     return invoices.map((invoice) => {
-      const products = invoice.saleInvoiceItems.map((item) => ({
-        productName: item.productSalePrice.product.name,
-        quantity: item.quantity.toNumber(),
-        price: item.productSalePrice.price.toNumber(),
-        unitSymbol: item.productSalePrice.unit.unitSymbol,
-      }));
-
       return {
-        invoiceId: invoice.id,
+        id: invoice.id,
+        customerName: invoice.customer.firstName,
         workerName: invoice.user.name,
-        products,
+        totalAmount: invoice.totalAmount,
+        paidSoFar: invoice.paidSoFar,
+        status: invoice.status,
       };
     });
   }
 
-  async findOne(id: number): Promise<SaleInvoiceData> {
+  async findOne(id: number) {
     const invoice = await this.prismaService.saleInvoice.findUnique({
       where: { id },
       include: {
         user: { select: { name: true } },
+        customer: true,
+        salePayments: {
+          include: {
+            user: true,
+          },
+        },
         saleInvoiceItems: {
           include: {
             productSalePrice: {
@@ -132,16 +129,27 @@ export class SaleInvoiceService {
     }
 
     const products = invoice.saleInvoiceItems.map((item) => ({
+      id: item.productSalePrice.product.id,
       productName: item.productSalePrice.product.name,
-      quantity: item.quantity.toNumber(),
-      price: item.productSalePrice.price.toNumber(),
+      quantity: item.quantity,
+      price: item.productSalePrice.price,
       unitSymbol: item.productSalePrice.unit.unitSymbol,
     }));
-
+    const payments = invoice.salePayments.map((item) => ({
+      id: item.id,
+      amount: item.amount,
+      workerName: item.user.name,
+      paidAt: item.createdAt,
+    }));
     return {
-      invoiceId: invoice.id,
+      id: invoice.id,
+      customerName: invoice.customer.firstName,
       workerName: invoice.user.name,
-      products,
+      totalAmount: invoice.totalAmount,
+      paidSoFar: invoice.paidSoFar,
+      status: invoice.status,
+      products: products,
+      payments: payments,
     };
   }
 
