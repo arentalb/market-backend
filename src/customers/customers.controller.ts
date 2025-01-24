@@ -10,6 +10,18 @@ import {
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import {
+  Pagination,
+  PaginationParams,
+} from '../common/decorators/pagination-params.decorator';
+import {
+  Sorting,
+  SortingParams,
+} from '../common/decorators/sorting-params.decorator';
+import {
+  Filtering,
+  FilteringParams,
+} from '../common/decorators/filtering-params.decorator';
 
 @Controller('customers')
 export class CustomersController {
@@ -21,11 +33,20 @@ export class CustomersController {
   }
 
   @Get()
-  async findAll() {
-    const customers = await this.customersService.findAll();
+  async findAll(
+    @PaginationParams() paginationParams: Pagination,
+    @SortingParams(['id', 'firstName', 'createdAt']) sort?: Sorting,
+    @FilteringParams(['id', 'firstName']) filter?: Filtering,
+  ) {
+    const { data, meta } = await this.customersService.findAll(
+      paginationParams,
+      sort,
+      filter,
+    );
     return {
       message: 'Customers fetched successfully',
-      data: { customers },
+      data: { customers: data },
+      meta: meta,
     };
   }
 

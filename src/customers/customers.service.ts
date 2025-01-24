@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { Sorting } from '../common/decorators/sorting-params.decorator';
+import { Filtering } from '../common/decorators/filtering-params.decorator';
+import { Pagination } from '../common/decorators/pagination-params.decorator';
+import { getOrderBy, getWhere } from '../common/helpers/prisma-helpers';
 
 @Injectable()
 export class CustomersService {
@@ -10,8 +14,28 @@ export class CustomersService {
     return 'This action adds a new customer';
   }
 
-  async findAll() {
-    return this.prismaService.customer.findMany();
+  async findAll(
+    { page, limit, offset }: Pagination,
+    sort?: Sorting,
+    filter?: Filtering,
+  ) {
+    const where = getWhere(filter);
+    const orderBy = getOrderBy(sort);
+    const totalItems = await this.prismaService.customer.count({ where });
+    const items = await this.prismaService.customer.findMany({
+      where,
+      orderBy,
+      skip: offset,
+      take: limit,
+    });
+    return {
+      data: items,
+      meta: {
+        totalItems,
+        page,
+        size: limit,
+      },
+    };
   }
 
   findOne(id: number) {
