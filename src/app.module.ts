@@ -14,6 +14,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { InvoiceModule } from './invoice/invoice.module';
 import { PaymentModule } from './payment/payment.module';
 import { SupplierModule } from './supplier/supplier.module';
+import { CustomersModule } from './customers/customers.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SupplierModule } from './supplier/supplier.module';
     InventoryModule,
     PaymentModule,
     SupplierModule,
+    CustomersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
