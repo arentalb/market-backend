@@ -13,7 +13,7 @@ import { CreateSaleInvoiceDto } from './dto/create-sale-invoice.dto';
 import { UpdateSaleInvoiceDto } from './dto/update-sale-invoice.dto';
 import { ActiveUser } from '../auth/decorators/active-user.decorator';
 
-@Controller('sale-invoice')
+@Controller('sale')
 export class SaleInvoiceController {
   constructor(private readonly saleInvoiceService: SaleInvoiceService) {}
 
@@ -32,7 +32,7 @@ export class SaleInvoiceController {
     };
   }
 
-  @Get()
+  @Get('invoice')
   async findAll() {
     const invoices = await this.saleInvoiceService.findAll();
     return {
@@ -43,7 +43,7 @@ export class SaleInvoiceController {
     };
   }
 
-  @Get(':id')
+  @Get('invoice/:id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const invoice = await this.saleInvoiceService.findOne(id);
     return {
@@ -54,7 +54,7 @@ export class SaleInvoiceController {
     };
   }
 
-  @Patch(':id')
+  @Patch('invoice/:id')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateSaleInvoiceDto: UpdateSaleInvoiceDto,
@@ -71,7 +71,7 @@ export class SaleInvoiceController {
     };
   }
 
-  @Delete(':id')
+  @Delete('invoice/:id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     const invoice = await this.saleInvoiceService.remove(id);
     return {

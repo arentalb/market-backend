@@ -1,4 +1,4 @@
-import { IsNumber, ValidateNested } from 'class-validator';
+import { IsNumber, IsOptional, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ProductDto {
@@ -16,4 +16,11 @@ export class CreateSaleInvoiceDto {
   @ValidateNested({ each: true })
   @Type(() => ProductDto)
   products: ProductDto[];
+
+  @IsNumber()
+  customerId: number;
+
+  @IsNumber()
+  @IsOptional()
+  paidAmount?: number;
 }

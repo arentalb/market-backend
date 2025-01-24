@@ -17,13 +17,15 @@ export class SaleInvoiceService {
   ) {}
 
   async create(createDto: CreateSaleInvoiceDto, workerId: number) {
-    const { products } = createDto;
+    const { products, customerId, paidAmount } = createDto;
 
     return this.prismaService.$transaction(async (prismaTransaction) => {
       const invoice = await prismaTransaction.saleInvoice.create({
         data: {
           processedBy: workerId,
           totalAmount: 0,
+          customerId: customerId,
+          paidSoFar: paidAmount || 0,
         },
       });
 
@@ -36,6 +38,11 @@ export class SaleInvoiceService {
             product.unitId,
             prismaTransaction,
           );
+        if (!salePriceInDb) {
+          throw new NotFoundException(
+            `Product price not found for product ${product.productId}`,
+          );
+        }
 
         await prismaTransaction.saleInvoiceItem.create({
           data: {
@@ -61,14 +68,12 @@ export class SaleInvoiceService {
         totalAmount += salePriceInDb.price.toNumber() * product.quantity;
       }
 
-      await prismaTransaction.saleInvoice.update({
+      return prismaTransaction.saleInvoice.update({
         where: { id: invoice.id },
-        data: { totalAmount },
+        data: { totalAmount, paidSoFar: paidAmount || totalAmount },
       });
-      return invoice;
     });
   }
-
   async findAll(): Promise<SaleInvoiceData[]> {
     const invoices = await this.prismaService.saleInvoice.findMany({
       include: {

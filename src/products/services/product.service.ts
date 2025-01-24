@@ -121,30 +121,60 @@ export class ProductService {
         },
       },
       include: {
-        productUnits: { include: { unit: true } },
+        productUnits: {
+          include: {
+            unit: true,
+          },
+        },
+        productSalePrices: {
+          orderBy: {
+            updatedAt: 'desc',
+          },
+          select: {
+            price: true,
+            updatedAt: true,
+            unitId: true,
+          },
+        },
         baseUnit: true,
         category: true,
       },
     });
-    return foundedProducts.map((product) => ({
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      baseUnit: {
-        id: product.baseUnitId,
-        unitName: product.baseUnit.unitName,
-        unitSymbol: product.baseUnit.unitSymbol,
-      },
-      category: {
-        id: product.category.id,
-        name: product.category.name,
-      },
-      productUnits: product.productUnits.map((pu) => ({
-        id: pu.unit.id,
-        unitName: pu.unit.unitName,
-        unitSymbol: pu.unit.unitSymbol,
-      })),
-    }));
+
+    return foundedProducts.map((product) => {
+      // Create a map to store the latest price for each unit
+      const latestPrices = new Map();
+
+      // Iterate over sale prices to keep only the latest per unit
+      product.productSalePrices.forEach((salePrice) => {
+        if (!latestPrices.has(salePrice.unitId)) {
+          latestPrices.set(salePrice.unitId, salePrice);
+        }
+      });
+
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        baseUnit: {
+          id: product.baseUnitId,
+          unitName: product.baseUnit.unitName,
+          unitSymbol: product.baseUnit.unitSymbol,
+        },
+        category: {
+          id: product.category.id,
+          name: product.category.name,
+        },
+        productUnits: product.productUnits.map((pu) => ({
+          id: pu.unit.id,
+          unitName: pu.unit.unitName,
+          unitSymbol: pu.unit.unitSymbol,
+          sellPrice: latestPrices.has(pu.unit.id)
+            ? latestPrices.get(pu.unit.id).price
+            : null,
+        })),
+      };
+    });
   }
 
   private async hasRelatedRecords(productId: number): Promise<boolean> {
