@@ -13,50 +13,43 @@ export function getOrderBy(sort?: Sorting) {
   };
 }
 
-export function getWhere(filter?: Filtering) {
-  if (!filter) return undefined;
+export function getWhere(filters: Filtering[]): any {
+  if (!filters || filters.length === 0) return {};
 
-  const { property, rule, value } = filter;
-  switch (rule) {
-    case FilterRule.IS_NULL:
-      return { [property]: { equals: null } };
-
-    case FilterRule.IS_NOT_NULL:
-      return { [property]: { not: null } };
-
-    case FilterRule.EQUALS:
-      return { [property]: { equals: value } };
-
-    case FilterRule.NOT_EQUALS:
-      return { [property]: { not: value } };
-
-    case FilterRule.GREATER_THAN:
-      return { [property]: { gt: parseNumericValue(value) } };
-
-    case FilterRule.GREATER_THAN_OR_EQUALS:
-      return { [property]: { gte: parseNumericValue(value) } };
-
-    case FilterRule.LESS_THAN:
-      return { [property]: { lt: parseNumericValue(value) } };
-
-    case FilterRule.LESS_THAN_OR_EQUALS:
-      return { [property]: { lte: parseNumericValue(value) } };
-
-    case FilterRule.LIKE:
-      return { [property]: { contains: value, mode: 'insensitive' } };
-
-    case FilterRule.NOT_LIKE:
-      return { NOT: { [property]: { contains: value, mode: 'insensitive' } } };
-
-    case FilterRule.IN:
-      return { [property]: { in: value.split(',') } };
-
-    case FilterRule.NOT_IN:
-      return { [property]: { notIn: value.split(',') } };
-
-    default:
-      return undefined;
-  }
+  return {
+    AND: filters.map(({ property, rule, value }) => {
+      switch (rule) {
+        case FilterRule.EQUALS:
+          return { [property]: value };
+        case FilterRule.NOT_EQUALS:
+          return { [property]: { not: value } };
+        case FilterRule.GREATER_THAN:
+          return { [property]: { gt: value } };
+        case FilterRule.GREATER_THAN_OR_EQUALS:
+          return { [property]: { gte: value } };
+        case FilterRule.LESS_THAN:
+          return { [property]: { lt: value } };
+        case FilterRule.LESS_THAN_OR_EQUALS:
+          return { [property]: { lte: value } };
+        case FilterRule.LIKE:
+          return { [property]: { contains: value, mode: 'insensitive' } };
+        case FilterRule.NOT_LIKE:
+          return {
+            [property]: { not: { contains: value, mode: 'insensitive' } },
+          };
+        case FilterRule.IN:
+          return { [property]: { in: value.split(',') } };
+        case FilterRule.NOT_IN:
+          return { [property]: { notIn: value.split(',') } };
+        case FilterRule.IS_NULL:
+          return { [property]: null };
+        case FilterRule.IS_NOT_NULL:
+          return { [property]: { not: null } };
+        default:
+          return {};
+      }
+    }),
+  };
 }
 
 function parseNumericValue(val?: string): number | string | undefined {

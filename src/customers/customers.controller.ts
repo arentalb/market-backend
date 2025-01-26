@@ -36,7 +36,7 @@ export class CustomersController {
   async findAll(
     @PaginationParams() paginationParams: Pagination,
     @SortingParams(['id', 'firstName', 'createdAt']) sort?: Sorting,
-    @FilteringParams(['id', 'firstName']) filter?: Filtering,
+    @FilteringParams(['id', 'firstName', 'phone']) filter?: Filtering[],
   ) {
     const { data, meta } = await this.customersService.findAll(
       paginationParams,

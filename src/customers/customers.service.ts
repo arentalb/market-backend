@@ -17,7 +17,7 @@ export class CustomersService {
   async findAll(
     { page, limit, offset }: Pagination,
     sort?: Sorting,
-    filter?: Filtering,
+    filter?: Filtering[],
   ) {
     const where = getWhere(filter);
     const orderBy = getOrderBy(sort);

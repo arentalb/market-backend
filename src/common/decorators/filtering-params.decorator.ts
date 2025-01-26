@@ -27,10 +27,19 @@ export enum FilterRule {
 }
 
 export const FilteringParams = createParamDecorator(
-  (validParams: string[], ctx: ExecutionContext): Filtering | null => {
+  (validParams: string[], ctx: ExecutionContext): Filtering[] => {
     const req: Request = ctx.switchToHttp().getRequest();
-    const filter = req.query.filter as string;
-    if (!filter) return null;
+    let filters: string[] = [];
+
+    const queryFilters = req.query.filter;
+
+    if (queryFilters) {
+      if (typeof queryFilters === 'string') {
+        filters = [queryFilters];
+      } else if (Array.isArray(queryFilters)) {
+        filters = queryFilters.map((f) => String(f));
+      }
+    }
 
     if (!Array.isArray(validParams)) {
       throw new BadRequestException(
@@ -39,23 +48,41 @@ export const FilteringParams = createParamDecorator(
     }
 
     const basicFilterPattern =
-      /^[a-zA-Z0-9_]+:(eq|neq|gt|gte|lt|lte|like|nlike|in|nin):[a-zA-Z0-9_,]+$/;
+      /^[a-zA-Z0-9_]+:(eq|neq|gt|gte|lt|lte|like|nlike|in|nin):[^:]+$/;
     const nullFilterPattern = /^[a-zA-Z0-9_]+:(isnull|isnotnull)$/;
 
-    if (!filter.match(basicFilterPattern) && !filter.match(nullFilterPattern)) {
-      throw new BadRequestException('Invalid filter parameter');
+    const parsedFilters: Filtering[] = [];
+
+    for (const f of filters) {
+      const trimmedFilter = f.trim();
+
+      if (
+        !trimmedFilter.match(basicFilterPattern) &&
+        !trimmedFilter.match(nullFilterPattern)
+      ) {
+        throw new BadRequestException(
+          `Invalid filter parameter: ${trimmedFilter}`,
+        );
+      }
+
+      const parts = trimmedFilter.split(':');
+      const [property, rule, value] = parts;
+
+      if (!validParams.includes(property)) {
+        throw new BadRequestException(`Invalid filter property: ${property}`);
+      }
+
+      if (!Object.values(FilterRule).includes(rule as FilterRule)) {
+        throw new BadRequestException(`Invalid filter rule: ${rule}`);
+      }
+
+      const filterValue = ['isnull', 'isnotnull'].includes(rule)
+        ? undefined
+        : value;
+
+      parsedFilters.push({ property, rule, value: filterValue });
     }
 
-    const [property, rule, value] = filter.split(':');
-
-    if (!validParams.includes(property)) {
-      throw new BadRequestException(`Invalid filter property: ${property}`);
-    }
-
-    if (!Object.values(FilterRule).includes(rule as FilterRule)) {
-      throw new BadRequestException(`Invalid filter rule: ${rule}`);
-    }
-
-    return { property, rule, value };
+    return parsedFilters.length > 0 ? parsedFilters : [];
   },
 );
