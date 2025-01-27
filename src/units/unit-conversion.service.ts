@@ -7,6 +7,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateConversionsDto } from './dto/create-conversions.dto';
 import { Decimal } from 'decimal.js';
+import { Pagination } from '../common/decorators/pagination-params.decorator';
 
 @Injectable()
 export class UnitConversionService {
@@ -57,13 +58,25 @@ export class UnitConversionService {
     });
   }
 
-  async findAll() {
-    return this.prismaService.unitConversion.findMany({
+  async findAll({ page, limit, offset }: Pagination) {
+    const totalItems = await this.prismaService.unitConversion.count();
+    const items = await this.prismaService.unitConversion.findMany({
+      skip: offset,
+      take: limit,
       include: {
         toUnit: true,
         fromUnit: true,
       },
     });
+
+    return {
+      data: items,
+      meta: {
+        totalItems,
+        page,
+        size: limit,
+      },
+    };
   }
 
   async findOneById(id: number) {

@@ -11,6 +11,10 @@ import {
 import { CreateConversionsDto } from './dto/create-conversions.dto';
 import { UnitConversionService } from './unit-conversion.service';
 import { UnitsService } from './units.service';
+import {
+  Pagination,
+  PaginationParams,
+} from '../common/decorators/pagination-params.decorator';
 
 @Controller('conversions')
 export class UnitConversionController {
@@ -31,11 +35,13 @@ export class UnitConversionController {
   }
 
   @Get()
-  async findAll() {
-    const conversions = await this.unitConversionService.findAll();
+  async findAll(@PaginationParams() pagination: Pagination) {
+    const { data, meta } = await this.unitConversionService.findAll(pagination);
+
     return {
       message: 'All unit conversions retrieved successfully',
-      data: { conversions },
+      data: { conversions: data },
+      meta: meta,
     };
   }
 
