@@ -6,6 +6,7 @@ import {
 import { CreateUnitDto } from './dto/create-unit.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UnitConversionService } from './unit-conversion.service';
+import { Pagination } from '../common/decorators/pagination-params.decorator';
 
 @Injectable()
 export class UnitsService {
@@ -24,8 +25,21 @@ export class UnitsService {
     });
   }
 
-  async findAll() {
-    return this.prismaService.unit.findMany();
+  async findAll({ page, limit, offset }: Pagination) {
+    const totalItems = await this.prismaService.unit.count();
+    const items = await this.prismaService.unit.findMany({
+      skip: offset,
+      take: limit,
+    });
+
+    return {
+      data: items,
+      meta: {
+        totalItems,
+        page,
+        size: limit,
+      },
+    };
   }
 
   async findOne(id: number) {

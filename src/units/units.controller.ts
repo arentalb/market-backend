@@ -11,6 +11,10 @@ import {
 } from '@nestjs/common';
 import { UnitsService } from './units.service';
 import { CreateUnitDto } from './dto/create-unit.dto';
+import {
+  Pagination,
+  PaginationParams,
+} from '../common/decorators/pagination-params.decorator';
 
 @Controller('units')
 export class UnitsController {
@@ -27,11 +31,12 @@ export class UnitsController {
   }
 
   @Get()
-  async findAll() {
-    const units = await this.unitsService.findAll();
+  async findAll(@PaginationParams() pagination: Pagination) {
+    const { data, meta } = await this.unitsService.findAll(pagination);
     return {
       message: 'All units retrieved successfully',
-      data: { units },
+      data: { units: data },
+      meta: meta,
     };
   }
 
