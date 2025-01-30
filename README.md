@@ -1,2 +1,2 @@
-# this is a backend for forever market 
-you can find teh frontend for it at https://github.com/arentalb/market-frontend
+# This is a Backend for forever market 
+you can find frontend for it at https://github.com/arentalb/market-frontend
